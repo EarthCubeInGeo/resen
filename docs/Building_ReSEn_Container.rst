@@ -63,8 +63,42 @@ Navigate to resen/docker, which is the location where the Dockerfile is and run:
 
     sudo docker build -t resen/testing .
 
-This can take some time. Make note of the container id.
+This will build an image. This can take some time.
 
-## Running the container
+## Running the image in a container
 
-sudo docker run -p 8000:8000 resen/testing jupyterhub
+    sudo docker run -p 8000:8000 --name testing resen/testing jupyterhub
+
+This creates an instance of the "resen/testing" docker image in a container called "testing". It forwards port 8000 inside the container to port 8000 outside of the container. Finally, it runs the command "jupyterhub" inside the container.
+
+To stop this container you can use:
+
+    sudo docker stop testing
+
+and then to get rid of it:
+
+    sudo docker rm testing
+
+noting that this doesn't delete the resen/testing image, but only the container "testing", which you can easily create again. You can look at all running docker containers with:
+
+    sudo docker ps
+
+You can execute a root bash shell in the instance of "resen/testing" that is running with the name "testing" like so:
+
+    sudo docker exec --user root -it testing /bin/bash
+
+which allows you to set a password for the user "jovyan", allowing you to log in to jupyterhub:
+
+    passwd jovyan
+
+Finally, in a browser, navigate to localhost:8000 and log in with jovyan and the password you just set.
+
+If you want to mount in your own notebooks/scripts for testing, then we can run the following (the :Z is needed for systems with SELinux):
+
+    sudo docker run -p 8000:8000 -v "$(pwd)"/testing:/home/jovyan/testing:ro,Z --name testing resen/testing jupyterhub -f /home/jovyan/testing/config/testing_jupyterhub_config.py
+
+### Helpful Resources
+
+* 
+* JupyterHub Authentication: https://github.com/jupyterhub/jupyterhub/blob/master/docs/source/getting-started/authenticators-users-basics.md
+** Dummy Authenticator: https://github.com/jupyterhub/dummyauthenticator
