@@ -43,6 +43,8 @@ RUN /bin/bash -c 'wget https://spdf.sci.gsfc.nasa.gov/pub/software/cdf/dist/cdf3
     cd .. && \
     rm -r cdf36_4-dist cdf36_4-dist-cdf.tar.gz'
 
+RUN rm /home/jovyan/.wget-hsts
+
 COPY resources/cdf.sh /etc/profile.d
 COPY resources/geospacepy_config.py /tmp
 COPY resources/start-singleuser-ingeo.sh /usr/local/bin
