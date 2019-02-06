@@ -34,6 +34,16 @@ See: https://github.com/jupyter/docker-stacks/blob/master/base-notebook/Dockerfi
 
 It might be advantageous to spool up an Ubuntu 18.04 VM to do some testing while installing packages and working with conda. Alternatively, one can use the docker image itself for doing this testing.
 
+## Conda Development Environment
+
+Install the miniconda environment: https://docs.conda.io/projects/continuumio-conda/en/latest/user-guide/install/macos.html
+
+In linux:
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-3.7.0-Linux-x86_64.sh -O ~/miniconda.sh
+    bash ~/miniconda.sh -b -p $HOME/miniconda
+    export PATH="$HOME/miniconda/bin:$PATH"
+
 
 ## Building the ReSEn container
 

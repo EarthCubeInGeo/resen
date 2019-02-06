@@ -215,3 +215,9 @@ RUN /bin/bash -c 'source activate python2 && \
 RUN /bin/bash -c 'source activate python2 && \
     conda install -y -c anaconda bsddb'
 
+
+############
+# Install some other python packages
+# cartopy: https://scitools.org.uk/cartopy/docs/latest/installing.html#installing
+
+RUN conda install -c conda-forge cartopy
