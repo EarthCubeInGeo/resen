@@ -101,4 +101,4 @@ If you want to mount in your own notebooks/scripts for testing, then we can run 
 
 * 
 * JupyterHub Authentication: https://github.com/jupyterhub/jupyterhub/blob/master/docs/source/getting-started/authenticators-users-basics.md
-** Dummy Authenticator: https://github.com/jupyterhub/dummyauthenticator
+    * Dummy Authenticator: https://github.com/jupyterhub/dummyauthenticator
