@@ -67,9 +67,9 @@ This will build an image. This can take some time.
 
 ## Running the image in a container
 
-    sudo docker run -p 8000:8000 --name testing resen/testing jupyterhub
+    sudo docker run -p 8000:8000 --name testing resen/testing bash
 
-This creates an instance of the "resen/testing" docker image in a container called "testing". It forwards port 8000 inside the container to port 8000 outside of the container. Finally, it runs the command "jupyterhub" inside the container.
+This creates an instance of the "resen/testing" docker image in a container called "testing". It forwards port 8000 inside the container to port 8000 outside of the container. Finally, it runs the command "bash" inside the container. For starting jupyterhub, see below.
 
 To stop this container you can use:
 

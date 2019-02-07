@@ -223,3 +223,6 @@ RUN /bin/bash -c 'source activate python2 && \
 # cartopy: https://scitools.org.uk/cartopy/docs/latest/installing.html#installing
 
 RUN conda install -c conda-forge cartopy
+
+# Needed for password-less login on jupyterhub when running locally.
+RUN pip install jupyterhub-dummyauthenticator
