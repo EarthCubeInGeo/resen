@@ -62,7 +62,7 @@ RUN conda create --quiet --yes -n python2 \
     'cryptography=1.7.1' \
     'pytest=3.0.5' \
     'nbformat=4.4.0' \
-    'basemap=1.0.7' && \
+    'basemap=1.2.0' && \
     conda remove --quiet --yes -n python2 --force qt pyqt && \
     conda clean -tipsy
 
@@ -222,7 +222,15 @@ RUN /bin/bash -c 'source activate python2 && \
 # Install some other python packages
 # cartopy: https://scitools.org.uk/cartopy/docs/latest/installing.html#installing
 
-RUN conda install -c conda-forge cartopy
+RUN /bin/bash -c 'source activate python2 && \
+    conda install cartopy=0.17.0'
+
+RUN /bin/bash -c 'source activate python2 && \
+    pip install apexpy==1.0.3'
+
+# Import spacepy once so that we get the .spacepy directory created
+RUN /bin/bash -c 'source activate python2 && \
+    python -c "import spacepy"'
 
 # Needed for password-less login on jupyterhub when running locally.
 RUN pip install jupyterhub-dummyauthenticator
