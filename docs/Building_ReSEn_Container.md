@@ -97,6 +97,12 @@ If you want to mount in your own notebooks/scripts for testing, then we can run 
 
     sudo docker run -p 8000:8000 -v "$(pwd)"/testing:/home/jovyan/testing:ro,Z --name testing resen/testing jupyterhub -f /home/jovyan/testing/config/testing_jupyterhub_config.py
 
+If you want to just run a notebook server, you can do so with:
+
+     sudo docker run -p 8000:8000 resen/testing start-notebook.sh --port 8000
+
+and note the token that is printed to the terminal, since you need this to log in. If you want to mount in persistent storage, you can do soe with the `-v` switch like above.
+
 ### Helpful Resources
 
 * 
