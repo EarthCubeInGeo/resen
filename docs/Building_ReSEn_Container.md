@@ -105,7 +105,12 @@ If you want to just run a notebook server, you can do so with:
 
      sudo docker run -p 8000:8000 resen/testing start-notebook.sh --port 8000
 
-and note the token that is printed to the terminal, since you need this to log in. If you want to mount in persistent storage, you can do soe with the `-v` switch like above.
+and note the token that is printed to the terminal, since you need this to log in. If you want to mount in persistent storage, you can do so with the `-v` switch like above.
+
+To start a container serving a jupyter lab issue the following command:
+
+     sudo docker run -p 8000:8000 --name testinglab resen/testinglab jupyter lab --port 8000
+    
 
 ### Helpful Resources
 
