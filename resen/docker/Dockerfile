@@ -16,10 +16,12 @@ RUN mkdir -p $HOME/cache/omni && \
 
 WORKDIR /home/$NB_USER/build 
 
+#######################################################################################
+# DO ROOT USER STUFF, SUCH AS INSTALLING PACKAGES
+#######################################################################################
 USER root
 
-# Install development packages 
-
+# Install development packages (move this into conda? supports windows and macosx outside of docker instead of just linux)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     mpich \
@@ -31,29 +33,51 @@ RUN apt-get update && \
     libssl-dev \
     libnetcdf-dev \
     ncurses-dev \
-    g++
+    g++ \
+    mlocate \
+    less 
+#    python-bsddb3             # needed for sciunit2... or can get with conda
 
-# Install NASA CDF
-# old: http://spdf.sci.gsfc.nasa.gov/pub/software/cdf/dist/cdf36_3_1/linux/cdf36_3_1-dist-cdf.tar.gz
-RUN /bin/bash -c 'wget https://spdf.sci.gsfc.nasa.gov/pub/software/cdf/dist/cdf36_4/linux/cdf36_4-dist-cdf.tar.gz && \
-    tar xvf cdf36_4-dist-cdf.tar.gz && \
-    cd cdf36_4-dist && \
-    make OS=linux ENV=gnu all && \
-    make INSTALLDIR=/usr/local install && \
-    cd .. && \
-    rm -r cdf36_4-dist cdf36_4-dist-cdf.tar.gz'
-
-RUN rm /home/jovyan/.wget-hsts
-
-COPY resources/cdf.sh /etc/profile.d
-COPY resources/geospacepy_config.py /tmp
+#############################
+# Copy in some custom scripts
+#############################
 COPY resources/start-singleuser-ingeo.sh /usr/local/bin
 COPY resources/nbstripout /usr/local/bin
 
-RUN chown $NB_USER:$NBUSER /tmp/geospacepy_config.py 
+##############################
+# Install NASA CDF from source
+##############################
+COPY resources/helpers/install_CDF.sh .
+RUN chmod +x install_CDF.sh && ./install_CDF.sh
+RUN rm install_CDF.sh
+RUN rm /home/jovyan/.wget-hsts
+COPY resources/cdf.sh /etc/profile.d
+
+#######################################################################################
+# DO USER STUFF, SUCH AS INSTALL PYTHON PACKAGES
+#######################################################################################
 
 USER $NB_USER
 
+###########################################
+# Install packages with binaries from Conda
+###########################################
+
+#######################
+# Update Conda to 4.6.4
+#######################
+RUN conda install -y -n base conda==4.6.8
+
+#################
+# Conda Libraries
+#################
+RUN conda install -y -n base -c anaconda db==5.3.28   # No windows support... worth investigating adding support to anaconda?
+
+#########################
+# Set up Conda environments
+#########################
+
+# python2.7
 RUN conda create --quiet --yes -n python2 \
     'paramiko=1.17.2' \
     'pymongo=3.2.2' \
@@ -62,55 +86,90 @@ RUN conda create --quiet --yes -n python2 \
     'cryptography=1.7.1' \
     'pytest=3.0.5' \
     'nbformat=4.4.0' \
+    'cartopy=0.17.0' \
     'basemap=1.2.0' && \
     conda remove --quiet --yes -n python2 --force qt pyqt && \
     conda clean -tipsy
 
-# Install davitpy and spacepy
+RUN /bin/bash -c 'source activate python2 && \
+    BERKELEYDB_DIR=/opt/conda pip install bsddb3'
 
+# python3.7
+RUN conda create --quiet --yes -n python3 \
+    'paramiko=1.17.2' \
+    'pymongo=3.2.2' \
+    'mechanize=0.2.5' \
+    'netcdf4=1.2.7' \
+    'cryptography=1.7.1' \
+    'pytest=3.0.5' \
+    'nbformat=4.4.0' \
+    'cartopy=0.17.0' \
+    'basemap=1.2.0' && \
+    conda remove --quiet --yes -n python3 --force qt pyqt && \
+    conda clean -tipsy
+
+
+##################################
+# Install python packages with pip
+##################################
+
+USER $NB_USER 
+
+RUN /bin/bash -c 'source activate python2 && \
+    pip install -U sciunit2==0.4.post3.dev95073526 paramiko==2.4.2 apexpy==1.0.3 ipython==5.8.0'
+
+
+############################
+# Install davitpy 0.8-master
+############################
 RUN /bin/bash -c 'git clone https://github.com/vtsuperdarn/davitpy.git && \
     cd davitpy && \
     git pull origin 0.8-master && \
     source /opt/conda/bin/activate python2 && \
     python setup.py install'
 
+#################
 # Install spacepy
-
+#################
 RUN /bin/bash -c 'source /opt/conda/bin/activate python2 && \
     source /etc/profile.d/cdf.sh && \
     pip install spacepy'
     # && \
     #python -c "import spacepy.toolbox; spacepy.toolbox.update()"'
 
-# Install amiepy
-#https://bitbucket.org/amienext/
 
-RUN /bin/bash -c 'source activate python2 && \
-    git clone https://bitbucket.org/amienext/geospacepy-lite.git && \
-    cd geospacepy-lite && \
-    mv /tmp/geospacepy_config.py geospacepy && \
-    python setup.py install'
- 
-RUN /bin/bash -c 'source activate python2 && \
-    git clone https://bitbucket.org/amienext/ovationpyme.git && \
-    cd ovationpyme && \
-    python setup.py install'
-  
+####################################
+# Install amiepy (removed for now)
+####################################
+#https://bitbucket.org/amienext/
+#COPY resources/geospacepy_config.py /tmp
+#RUN chown $NB_USER:$NB_USER /tmp/geospacepy_config.py 
+#RUN /bin/bash -c 'source activate python2 && \
+#    git clone https://bitbucket.org/amienext/geospacepy-lite.git && \
+#    cd geospacepy-lite && \
+#    mv /tmp/geospacepy_config.py geospacepy && \
+#    python setup.py install'
+# 
+#RUN /bin/bash -c 'source activate python2 && \
+#    git clone https://bitbucket.org/amienext/ovationpyme.git && \
+#    cd ovationpyme && \
+#    python setup.py install'
+#  
 # RUN /bin/bash -c 'source activate python2 && \
 #     git clone https://github.com/lkilcommons/apex-python.git && \
 #     cd apex-python && \
 #     python setup.py install'
-      
-RUN /bin/bash -c 'source activate python2 && \
-    git clone https://github.com/lkilcommons/igrfpy.git && \
-    cd igrfpy && \
-    python setup.py install'
-    
-RUN /bin/bash -c 'source activate python2 && \
-    git clone https://bitbucket.org/amienext/just_sam.git && \
-    cd just_sam && \
-    python setup.py install'
-
+#      
+#RUN /bin/bash -c 'source activate python2 && \
+#    git clone https://github.com/lkilcommons/igrfpy.git && \
+#    cd igrfpy && \
+#    python setup.py install'
+#    
+#RUN /bin/bash -c 'source activate python2 && \
+#    git clone https://bitbucket.org/amienext/just_sam.git && \
+#    cd just_sam && \
+#    python setup.py install'
+#
 # RUN /bin/bash -c 'source activate python2 && \
 #    git clone https://bitbucket.org/lkilcommons/amiepy.git && \
 #    cd amiepy && \
@@ -126,12 +185,16 @@ RUN /bin/bash -c 'source activate python2 && \
 #    mv tmp AmiePyDemo.ipynb && \
 #    cp AmiePyDemo.ipynb $HOME/examples'
 
-#
-# Cleanup 
+
+
+#########
+# Cleanup
+######### 
 
 RUN rm -r $BUILD
 
 WORKDIR /home/$NB_USER/work
+
 
 #################
 # asreimer: stuff to get gdrivefs working
@@ -206,27 +269,12 @@ RUN rm -r /home/$NB_USER/work/FetchData /home/$NB_USER/work/FetchData.tar.gz
 #
 #RUN rm -r /home/$NB_USER/work/data_gridding.tar.gz /home/$NB_USER/work/geomag.tar.gz /home/$NB_USER/work/geomag
 
-############
-# Sciunit installation
 
-USER $NB_USER 
-
-RUN /bin/bash -c 'source activate python2 && \
-    pip install -U sciunit2'
-
-RUN /bin/bash -c 'source activate python2 && \
-    conda install -y -c anaconda bsddb'
+#######################################################################################
+# POST INSTALLATION STUFF, SUCH AS CLEANUP
+#######################################################################################
 
 
-############
-# Install some other python packages
-# cartopy: https://scitools.org.uk/cartopy/docs/latest/installing.html#installing
-
-RUN /bin/bash -c 'source activate python2 && \
-    conda install cartopy=0.17.0'
-
-RUN /bin/bash -c 'source activate python2 && \
-    pip install apexpy==1.0.3'
 
 # Import spacepy once so that we get the .spacepy directory created
 RUN /bin/bash -c 'source activate python2 && \
@@ -234,3 +282,5 @@ RUN /bin/bash -c 'source activate python2 && \
 
 # Needed for password-less login on jupyterhub when running locally.
 RUN pip install jupyterhub-dummyauthenticator
+
+RUN pip install jupyterlab

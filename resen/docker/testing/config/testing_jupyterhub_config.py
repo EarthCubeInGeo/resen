@@ -11,6 +11,9 @@
 
 c = get_config()
 
+# Use Jupyterlab instead of Jupyterhub or notebook server
+c.Spawner.default_url = '/lab'
+
 # Start the notebook server in the home jovyan directory
 c.Spawner.notebook_dir = '/home/jovyan/'
 

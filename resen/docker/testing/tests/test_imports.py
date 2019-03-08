@@ -21,6 +21,7 @@ class ImportTester(unittest.TestCase):
     def test_imports(self):
         # Try to import all the packages
         for package in self.packages:
+            print("Importing %s" % packages)
             importlib.import_module(package)
 
         # if we get here, everything imported fine!
