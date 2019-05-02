@@ -285,12 +285,12 @@ def main():
     intro = '\n'.join(intro)
 
     try:
-        resen = resen.Resen()
+        res = resen.Resen()
     except RuntimeError:
         print("ERROR: another instance of Resen is already running!")
         sys.exit(1)
 
-    ResenCmd(resen).cmdloop(intro)
+    ResenCmd(res).cmdloop(intro)
 
 
 if __name__ == '__main__':
