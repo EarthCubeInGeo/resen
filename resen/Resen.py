@@ -32,6 +32,7 @@ import time        # used for waiting (time.sleep())
 import random      # used to generate tokens for jupyter server
 import tempfile    # use this to get unique name for docker container
 import webbrowser  # use this to open web browser
+from subprocess import Popen, PIPE  # used for selinux detection
 
 import docker
 
@@ -40,14 +41,9 @@ class Resen():
     def __init__(self):
         self.base_config_dir = self._get_config_dir()
         self.__locked = False
-        # TODO: check for a lock file and refuse to start if one exists
         self.__lock()
 
         self.bucket_manager = BucketManager(self.base_config_dir)
-
-        # TODO: Add start_notebook and start_lab commands?
-        #self.default_command = 'jupyter notebook --no-browser --port {port} --NotebookApp.token="{token}" --KernelSpecManager.ensure_native_kernel=False'
-        # webbrowser.open('http://localhost:8000/?token={token}')
 
     def create_bucket(self,bucket_name):
         return self.bucket_manager.create_bucket(bucket_name)
@@ -137,6 +133,8 @@ class BucketManager():
         self.dockerhelper = DockerHelper()
         # load 
         self.load_config()
+
+        self.selinux = self.__detect_selinux()
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
@@ -297,6 +295,16 @@ class BucketManager():
         if container in existing_container:
             print("ERROR: Container storage location already in use in bucket!")
             return False
+
+        if not permissions in ['r','ro','rw']:
+            print("ERROR: Invalid permissions. Valid options are 'r' and 'rw'.")
+            return False
+
+        if permissions in ['r','ro']:
+            permissions = 'ro'
+
+        if self.selinux:
+            permissions += ',Z'
 
         # TODO: check if storage location exists on host
         self.buckets[ind]['docker']['storage'].append([local,container,permissions])
@@ -544,6 +552,17 @@ class BucketManager():
 
         ind = self.bucket_names.index(bucket_name)
         return self.buckets[ind]['docker']['container']
+
+    def __detect_selinux(self):
+        p = Popen(['/usr/sbin/getenforce'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        output, err = p.communicate()
+        rc = p.returncode
+
+        if rc == 0:
+            return True
+        else:
+            return False
+
 
     # TODO: def reset_bucket(self,bucket_name):
     # used to reset a bucket to initial state (stop existing container, delete it, create new container)
