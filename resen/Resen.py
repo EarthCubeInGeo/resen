@@ -32,6 +32,7 @@ import time        # used for waiting (time.sleep())
 import random      # used to generate tokens for jupyter server
 import tempfile    # use this to get unique name for docker container
 import webbrowser  # use this to open web browser
+from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
 
 import docker
@@ -133,8 +134,14 @@ class BucketManager():
         self.dockerhelper = DockerHelper()
         # load 
         self.load_config()
-
+        self.valid_cores = self.__get_valid_cores()
         self.selinux = self.__detect_selinux()
+        self.storage_whitelist = ['/home/jovyan/work','/home/jovyan/mount']
+
+    def __get_valid_cores(self):
+        # TODO: download json file from resen-core github repo
+        #       and if that fails, fallback to hardcoded list
+        return [{"version":"2019.1.0rc1","repo":"resen-core","org":"earthcubeingeo",},]
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
@@ -278,8 +285,6 @@ class BucketManager():
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
             return False
 
-        # TODO: check that permissions is either 'r' or 'rw' and throw an error if not
-
         ind = self.bucket_names.index(bucket_name)
         # check if bucket is running
         if self.buckets[ind]['docker']['status'] is not None:
@@ -294,6 +299,17 @@ class BucketManager():
         existing_container = [x[1] for x in self.buckets[ind]['docker']['storage']]
         if container in existing_container:
             print("ERROR: Container storage location already in use in bucket!")
+            return False
+
+        # check that user is mounting in a whitelisted location
+        valid = False
+        child = Path(container)
+        for loc in self.storage_whitelist:
+            p = Path(loc)
+            if p in child.parents:
+                valid = True
+        if not valid:
+            print("ERROR: Invalid mount location. Can only mount storage into: %s." % ', '.join(self.storage_whitelist))
             return False
 
         if not permissions in ['r','ro','rw']:
@@ -395,7 +411,17 @@ class BucketManager():
             print("ERROR: Image %s was already added to bucket %s" % (existing_image,bucket_name))
             return False
 
-        self.buckets[ind]['docker']['image'] = docker_image
+        valid_versions = [x['version'] for x in self.valid_cores]
+        if not docker_image in valid_versions:
+            print("ERROR: Invalid resen-core version %s. Valid version: %s" % (docker_image,', '.join(valid_versions)))
+            return False
+        
+        for x in self.valid_cores:
+            if docker_image == x['version']:
+                image = 'docker.io/%s/%s:%s' % (x['org'],x['repo'],x['version'])
+                break
+
+        self.buckets[ind]['docker']['image'] = image
         self.save_config()
         
         return True
@@ -556,9 +582,10 @@ class BucketManager():
     def __detect_selinux(self):
         p = Popen(['/usr/sbin/getenforce'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
+        output = output.decode('utf-8').strip('\n')   
         rc = p.returncode
 
-        if rc == 0:
+        if rc == 0 and output == 'Enforcing':
             return True
         else:
             return False
@@ -579,31 +606,16 @@ class DockerHelper():
         # need to get information for each resen-core from somewhere. 
         # Info like, what internal port needs to be exposed? Where do we get the image from? etc.
         # mounting directory in the container?
-        self.DOCKER_IMAGES = {'resen-core-v1': {'url':'url_for_docker_pull','homedir':'/home/jovyan/'},
-                             }
-
         self.container_prefix = 'resen_'
         
-
-
         self.docker = docker.from_env()
-
-        # self.base_cmd = dict()
-        # self.base_cmd['run'] = 'docker run -tp %s:%s -v "%s:%s:Z --name %s resenlab/testing bash'
-        # self.base_cmd['start'] = 'docker start %s'  # docker start container_name
-        # self.base_cmd['stop'] = 'docker stop %s'  # docker stop container_name
-        # self.base_cmd['remove'] = 'docker rm %s'  # docker rm container_name
-
-    # TODO: how do we pull images from dockerhub?
-    # def pull_image(self,image_name):
-    #     pass
 
     def create_container(self,**input_kwargs):
         # TODO: Does container already exist? Does image exist (if not, pull it)?
         ports = input_kwargs.get('ports',None)
         storage = input_kwargs.get('storage',None)
         bucket_name = input_kwargs.get('bucket_name',None)
-        image_name = input_kwargs.get('image_name','resenlab/testing')
+        image_name = input_kwargs.get('image_name',None)
 
 
         # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
@@ -626,6 +638,15 @@ class DockerHelper():
             key = host
             temp = {'bind': container, 'mode': permissions}
             create_kwargs['volumes'][key] = temp
+
+        # check if we have image, if not, pull it
+        reps = [x.attrs['RepoTags'] for x in self.docker.images.list()]
+        if not image_name in reps:
+            print("Pulling image: %s" % image_name)
+            print("   This may take some time...")
+            repo, tag = image_name.split(':')
+            self.docker.images.pull(repo,tag=tag)
+            print("Done!")
 
         container_id = self.docker.containers.create(image_name,**create_kwargs)
 
