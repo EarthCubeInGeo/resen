@@ -580,14 +580,17 @@ class BucketManager():
         return self.buckets[ind]['docker']['container']
 
     def __detect_selinux(self):
-        p = Popen(['/usr/sbin/getenforce'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        output, err = p.communicate()
-        output = output.decode('utf-8').strip('\n')   
-        rc = p.returncode
+        try:
+            p = Popen(['/usr/sbin/getenforce'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            output, err = p.communicate()
+            output = output.decode('utf-8').strip('\n')   
+            rc = p.returncode
 
-        if rc == 0 and output == 'Enforcing':
-            return True
-        else:
+            if rc == 0 and output == 'Enforcing':
+                return True
+            else:
+                return False
+        except FileNotFoundError:
             return False
 
 
@@ -599,7 +602,6 @@ class BucketManager():
 
 # how do we call docker commands? subprocess? os.call?
 # TODO: Use the docker SDK (https://docker-py.readthedocs.io/en/stable/)
-# TODO: detect selinux installation (if Linux, check for getenforce), use Z in permissions
 class DockerHelper():
     def __init__(self):
         # TODO: define these in a dictionary or json file for each version of resen-core
