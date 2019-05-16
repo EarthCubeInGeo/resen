@@ -656,7 +656,7 @@ class DockerHelper():
         if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            name_repo = "%s:%s"%(image_name,image_repodigest)
+            name_repo = "%s@%s"%(image_name,image_repodigest)
             self.docker.images.pull(name_repo)
             print("Done!")
 
