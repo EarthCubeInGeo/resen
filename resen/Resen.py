@@ -642,7 +642,8 @@ class DockerHelper():
             create_kwargs['volumes'][key] = temp
 
         # check if we have image, if not, pull it
-        reps = [x.attrs['RepoTags'] for x in self.docker.images.list()]
+        reps = ['docker.io/'+item for x in self.docker.images.list() for item in x.attrs['RepoTags']] # flat list
+
         if not image_name in reps:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
