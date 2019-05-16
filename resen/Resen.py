@@ -418,7 +418,7 @@ class BucketManager():
         
         for x in self.valid_cores:
             if docker_image == x['version']:
-                image = 'docker.io/%s/%s:%s' % (x['org'],x['repo'],x['version'])
+                image = '%s/%s:%s' % (x['org'],x['repo'],x['version'])
                 break
 
         self.buckets[ind]['docker']['image'] = image
@@ -642,7 +642,7 @@ class DockerHelper():
             create_kwargs['volumes'][key] = temp
 
         # check if we have image, if not, pull it
-        reps = ['docker.io/'+item for x in self.docker.images.list() for item in x.attrs['RepoTags']] # flat list
+        reps = [item for x in self.docker.images.list() for item in x.tags] # flat list
 
         if not image_name in reps:
             print("Pulling image: %s" % image_name)
