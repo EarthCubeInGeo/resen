@@ -654,10 +654,14 @@ class DockerHelper():
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
         if image_id not in local_image_ids:
+            # get the repo digest hash
+            remote_repodigest = self.docker.images.get_registry_data(image_name).id
+            # verify that the repo has the digest we expect
+            assert image_repodigest == remote_repodigest, \
+                    'Trying to retrieve an image with different digest.'
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            name_repo = "%s@%s"%(image_name,image_repodigest)
-            self.docker.images.pull(name_repo)
+            self.docker.images.pull(image_name)
             print("Done!")
 
         container_id = self.docker.containers.create(image_name,**create_kwargs)
