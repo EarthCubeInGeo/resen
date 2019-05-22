@@ -21,7 +21,7 @@ Install Resen by first cloning the resen github repo (https://github.com/EarthCu
 
     git clone https://github.com/EarthCubeInGeo/resen.git
 
-Change into the `resen` directory::
+Change into the ``resen`` directory::
 
     cd resen
 

@@ -1,7 +1,7 @@
 Usage
 =====
 
-To use resen, simpy enter `resen` at the command line::
+To use resen, simpy enter ``resen`` at the command line::
 
     $ resen
 
@@ -16,7 +16,7 @@ This will open the resen tool::
     
     [resen] >>> 
 
-Type `help` to see available comands::
+Type ``help`` to see available comands::
 
     [resen] >>> help
 
