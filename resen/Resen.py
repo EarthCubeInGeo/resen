@@ -438,6 +438,12 @@ class BucketManager():
 
         ind = self.bucket_names.index(bucket_name)
         bucket = self.buckets[ind]
+        
+        # Make sure we have an image assigned to the bucket
+        existing_image = bucket['docker']['image']
+        if existing_image is None:
+            print("ERROR: Bucket does not have an image assigned to it.")
+            return False
 
         if bucket['docker']['container'] is None:
             # no container yet created, so create one
