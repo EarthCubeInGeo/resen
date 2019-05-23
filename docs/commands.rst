@@ -1,6 +1,5 @@
-==============
 Resen Commands
-==============
+**************
 
 .. automodule:: resen
 
