@@ -1,7 +1,7 @@
 Usage
 *****
 
-To use resen, simpy enter ``resen`` at the command line::
+To use resen, simply enter ``resen`` at the command line::
 
     $ resen
 
@@ -16,7 +16,7 @@ This will open the resen tool::
     
     [resen] >>> 
 
-Type ``help`` to see available comands::
+Type ``help`` to see available commands::
 
     [resen] >>> help
 
@@ -40,7 +40,7 @@ Setup a New Bucket
 
 	[resen] >>> create_bucket amber
 
-2. Add a resen image to the bucket.  The image name must be a vaild resen-core tag that is available on Docker Hub.  For a list of tags, see https://hub.docker.com/r/earthcubeingeo/resen-core/tags.  To add the ``2019.1.0rc1`` image to ``amber``::
+2. Add a resen image to the bucket.  The image name must be a valid resen-core tag that is available on Docker Hub.  For a list of tags, see https://hub.docker.com/r/earthcubeingeo/resen-core/tags.  To add the ``2019.1.0rc1`` image to ``amber``::
 
 	[resen] >>> add_image amber 2019.1.0rc1
 
@@ -48,7 +48,7 @@ Setup a New Bucket
 
 	[resen] >>> add_port amber 8000 8080
 
-4. Add a persistent storage directory to the bucket.  This lets the bucket access code and data on the local machine.  Files created in a Resen bucket will be available outside of the bucket or after the bucket has been deleted ONLY if they are saved in a persistent storage directory.  Multiple storage directories can be added to the bucket.  Each persistant storage directory can have either read (`r`) or read/write (`rw`) permissions, specifying whether or not resen can write to the local directory.  Add the local directories ``/home/usr/code/fossil`` and ``/home/usr/data`` to the bucket in the ``/home/jovyan/work`` directory::
+4. Add a persistent storage directory to the bucket.  This lets the bucket access code and data on the local machine.  Files created in a Resen bucket will be available outside of the bucket or after the bucket has been deleted ONLY if they are saved in a persistent storage directory.  Multiple storage directories can be added to the bucket.  Each persistent storage directory can have either read (`r`) or read/write (`rw`) permissions, specifying whether or not resen can write to the local directory.  Add the local directories ``/home/usr/code/fossil`` and ``/home/usr/data`` to the bucket in the ``/home/jovyan/work`` directory::
 
 	[resen] >>> add_storage amber /home/usr/code/fossil /home/jovyan/work/fossil rw
 	[resen] >>> add_storage amber /home/usr/data /home/jovyan/work/fossil r
@@ -62,7 +62,7 @@ At this point, the bucket should have a name, an image, at least one port, and a
 
 Work in a Bucket
 ----------------
-1. Check what buckets are availabe with ``status``::
+1. Check what buckets are available with ``status``::
 
 	[resen] >>> status
 	Bucket Name         Docker Image             Status                   
@@ -106,4 +106,4 @@ Delete a bucket::
 
 	remove_bucket amber
 
-WARNING: This will perminently delete the bucket.  Any work that is not saved in a persistent storage directory will be lost.
+WARNING: This will permanently delete the bucket.  Any work that is not saved in a persistent storage directory will be lost.
