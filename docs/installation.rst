@@ -11,7 +11,20 @@ Python (https://www.python.org/) is an open source, interpreted programming lang
 Docker
 ======
 
-Follow these instructions to download and install docker for your operating system. https://docs.docker.com/v17.12/install/
+Docker CE is the recomended version of Docker to use with Resen.  `Installation instructions <https://docs.docker.com/install/>`_ can be found in the docker documentation.  For convenience, some OS specific links are provided below:
+
+MacOS: `Install Docker Desktop for Mac <https://docs.docker.com/docker-for-mac/install/>`_
+
+Windows: `Install Docker Desktop for Windows <https://docs.docker.com/docker-for-windows/install/>`_
+
+CentOS: `Get Docker CE for CentOS <https://docs.docker.com/install/linux/docker-ce/centos/>`_
+
+Debian: `Get Docker CE for Debian <https://docs.docker.com/install/linux/docker-ce/debian/>`_
+
+Fedora: `Get Docker CE for Fedora <https://docs.docker.com/install/linux/docker-ce/fedora/>`_
+
+Ubuntu: `Get Docker CE for Ubuntu <https://docs.docker.com/install/linux/docker-ce/ubuntu/>`_
+
 
 Resen
 =====
