@@ -12,7 +12,7 @@ This will open the resen tool::
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
     
-    Resen 19.1.0 -- Reproducible Software Environment
+    Resen 2019.1.0rc1 -- Reproducible Software Environment
     
     [resen] >>> 
 
@@ -51,7 +51,7 @@ Setup a New Bucket
 4. Add a persistent storage directory to the bucket.  This lets the bucket access code and data on the local machine.  Files created in a Resen bucket will be available outside of the bucket or after the bucket has been deleted ONLY if they are saved in a persistent storage directory.  Multiple storage directories can be added to the bucket.  Each persistent storage directory can have either read (`r`) or read/write (`rw`) permissions, specifying whether or not resen can write to the local directory.  Add the local directories ``/home/usr/code/fossil`` and ``/home/usr/data`` to the bucket in the ``/home/jovyan/work`` directory::
 
 	[resen] >>> add_storage amber /home/usr/code/fossil /home/jovyan/work/fossil rw
-	[resen] >>> add_storage amber /home/usr/data /home/jovyan/work/fossil r
+	[resen] >>> add_storage amber /home/usr/data /home/jovyan/work/data r
 
 5. Check the status of the bucket::
 
@@ -73,6 +73,9 @@ Newly created buckets that have not been started will have Status ``None``.
 2. Start a newly created bucket or restart a bucket that has been exited::
 
 	[resen] >>> start_bucket amber
+	Pulling image: docker.io/earthcubeingeo/resen-core:2019.1.0rc1
+	    This may take some time...
+	Done!
 
 The status of ``amber`` should now be ``running``::
 
@@ -84,9 +87,13 @@ The status of ``amber`` should now be ``running``::
 
 	[resen] >>> start_jupyter amber 8000 8080
 
-The jupyter server starts in the ``/home/jovyan/work`` directory, which should include the persistent storage directories ``fossil`` and ``data``.
+The jupyter server starts in the ``/home/jovyan/work`` directory, which should include the persistent storage directories ``fossil`` and ``data``. Alternatively you can start directly a jupyter lab adding ``--lab`` to the prevoius command::
 
-4. Stop the jupyter server by clicking "Quit" on the home page.
+	[resen] >>> start_jupyter amber 8000 8080 --lab
+	
+or, if you already started the notebook without ``--lab`` you can change the url in your browser from ``http://localhost:8000/tree`` to ``http://localhost:8000/lab``. One can go back from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
+
+4. Stop the jupyter server by clicking the "Quit" button on the home page of the notebook. The jupyter lab "Quit" button has not been configured in this version.
 
 5. Stop the bucket::
 
