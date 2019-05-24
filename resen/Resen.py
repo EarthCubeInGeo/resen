@@ -420,14 +420,14 @@ class BucketManager():
         
         for x in self.valid_cores:
             if docker_image == x['version']:
-                image = 'docker.io/%s/%s:%s' % (x['org'],x['repo'],x['version'])
+                image = x['version']
                 image_id = x['image_id']
-                image_repodigest = x['repodigest']
+                pull_image = '%s/%s@%s' % (x['org'],x['repo'],x['repodigest'])
                 break
 
         self.buckets[ind]['docker']['image'] = image
         self.buckets[ind]['docker']['image_id'] = image_id
-        self.buckets[ind]['docker']['image_repodigest'] = image_repodigest
+        self.buckets[ind]['docker']['pull_image'] = pull_image
         self.save_config()
         
         return True
@@ -453,7 +453,7 @@ class BucketManager():
             kwargs['bucket_name'] = bucket['bucket']['name']
             kwargs['image_name'] = bucket['docker']['image']
             kwargs['image_id'] = bucket['docker']['image_id']
-            kwargs['image_repodigest'] = bucket['docker']['image_repodigest']
+            kwargs['pull_image'] = bucket['docker']['pull_image']
             container_id = self.dockerhelper.create_container(**kwargs)
 
             self.buckets[ind]['docker']['container'] = container_id
@@ -627,7 +627,7 @@ class DockerHelper():
         bucket_name = input_kwargs.get('bucket_name',None)
         image_name = input_kwargs.get('image_name',None)
         image_id = input_kwargs.get('image_id',None)
-        image_repodigest = input_kwargs.get('image_repodigest',None)
+        pull_image = input_kwargs.get('pull_image',None)
 
 
         # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
@@ -654,17 +654,12 @@ class DockerHelper():
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
         if image_id not in local_image_ids:
-            # get the repo digest hash
-            remote_repodigest = self.docker.images.get_registry_data(image_name).id
-            # verify that the repo has the digest we expect
-            assert image_repodigest == remote_repodigest, \
-                    'Trying to retrieve an image with different digest.'
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            self.docker.images.pull(image_name)
+            self.docker.images.pull(pull_image)
             print("Done!")
 
-        container_id = self.docker.containers.create(image_name,**create_kwargs)
+        container_id = self.docker.containers.create(image_id,**create_kwargs)
 
         return container_id.id
 
