@@ -141,7 +141,9 @@ class BucketManager():
     def __get_valid_cores(self):
         # TODO: download json file from resen-core github repo
         #       and if that fails, fallback to hardcoded list
-        return [{"version":"2019.1.0rc1","repo":"resen-core","org":"earthcubeingeo",},]
+        return [{"version":"2019.1.0rc1","repo":"resen-core","org":"earthcubeingeo",
+            "image_id":'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+            "repodigest":'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b'},]
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
@@ -418,10 +420,14 @@ class BucketManager():
         
         for x in self.valid_cores:
             if docker_image == x['version']:
-                image = 'docker.io/%s/%s:%s' % (x['org'],x['repo'],x['version'])
+                image = x['version']
+                image_id = x['image_id']
+                pull_image = '%s/%s@%s' % (x['org'],x['repo'],x['repodigest'])
                 break
 
         self.buckets[ind]['docker']['image'] = image
+        self.buckets[ind]['docker']['image_id'] = image_id
+        self.buckets[ind]['docker']['pull_image'] = pull_image
         self.save_config()
         
         return True
@@ -452,6 +458,8 @@ class BucketManager():
             kwargs['storage'] = bucket['docker']['storage']
             kwargs['bucket_name'] = bucket['bucket']['name']
             kwargs['image_name'] = bucket['docker']['image']
+            kwargs['image_id'] = bucket['docker']['image_id']
+            kwargs['pull_image'] = bucket['docker']['pull_image']
             container_id = self.dockerhelper.create_container(**kwargs)
 
             self.buckets[ind]['docker']['container'] = container_id
@@ -624,6 +632,8 @@ class DockerHelper():
         storage = input_kwargs.get('storage',None)
         bucket_name = input_kwargs.get('bucket_name',None)
         image_name = input_kwargs.get('image_name',None)
+        image_id = input_kwargs.get('image_id',None)
+        pull_image = input_kwargs.get('pull_image',None)
 
 
         # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
@@ -648,15 +658,14 @@ class DockerHelper():
             create_kwargs['volumes'][key] = temp
 
         # check if we have image, if not, pull it
-        reps = [x.attrs['RepoTags'] for x in self.docker.images.list()]
-        if not image_name in reps:
+        local_image_ids = [x.id for x in self.docker.images.list()]
+        if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            repo, tag = image_name.split(':')
-            self.docker.images.pull(repo,tag=tag)
+            self.docker.images.pull(pull_image)
             print("Done!")
 
-        container_id = self.docker.containers.create(image_name,**create_kwargs)
+        container_id = self.docker.containers.create(image_id,**create_kwargs)
 
         return container_id.id
 
