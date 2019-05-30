@@ -662,7 +662,10 @@ class DockerHelper():
         if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            self.docker.images.pull(pull_image)
+            image = self.docker.images.pull(pull_image)
+            repo,digest = pull_image.split('@')
+            # When pulling from repodigest sha256 no tag is assigned. So:
+            image.tag(repo, tag=image_name)
             print("Done!")
 
         container_id = self.docker.containers.create(image_id,**create_kwargs)
