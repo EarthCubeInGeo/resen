@@ -623,7 +623,7 @@ class DockerHelper():
         # Info like, what internal port needs to be exposed? Where do we get the image from? etc.
         # mounting directory in the container?
         self.container_prefix = 'resen_'
-        
+
         self.docker = docker.from_env()
 
     def create_container(self,**input_kwargs):
@@ -662,7 +662,8 @@ class DockerHelper():
         if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            image = self.docker.images.pull(pull_image)
+            DockerHelper.stream_pull_image(pull_image)
+            image = self.docker.images.get(pull_image)
             repo,digest = pull_image.split('@')
             # When pulling from repodigest sha256 no tag is assigned. So:
             image.tag(repo, tag=image_name)
@@ -672,6 +673,32 @@ class DockerHelper():
 
         return container_id.id
 
+    @staticmethod
+    def stream_pull_image(pull_image):
+        client = docker.APIClient(base_url='unix://var/run/docker.sock')
+        id_list = []
+        id_current = []
+        id_total = 0
+        try:
+            for line in client.pull(pull_image,stream=True, decode=True):
+                if 'progress' not in line:
+                    continue
+                line_current = line['progressDetail']['current']
+                if line['id'] not in id_list:
+                    id_list += [line['id']]
+                    id_current += [line_current]
+                    id_total += line['progressDetail']['total']
+                else:
+                    id_current[id_list.index(line['id'])] = line_current
+                current = 0
+                for current0 in id_current:
+                     current += current0
+                percentage = current/id_total*100
+                bar = int(percentage)*"="+">"+(100-int(percentage))*" "
+                print("\r[%s] %5.2f %%"%(bar,percentage),end="")
+        except:
+            print("\nError pulling image %s"%pull_image)
+        print() # to avoid erasing the progress bar at the end
 
     def start_container(self, container_id):
         # need to check if bucket config has changed since last run
