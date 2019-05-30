@@ -34,6 +34,7 @@ import tempfile    # use this to get unique name for docker container
 import webbrowser  # use this to open web browser
 from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
+import curses      # to show pull progress bar
 
 import docker
 
@@ -662,7 +663,8 @@ class DockerHelper():
         if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            image = self.docker.images.pull(pull_image)
+            self.stream_pull_image(pull_image)
+            image = self.docker.images.get(pull_image)
             repo,digest = pull_image.split('@')
             # When pulling from repodigest sha256 no tag is assigned. So:
             image.tag(repo, tag=image_name)
@@ -672,6 +674,24 @@ class DockerHelper():
 
         return container_id.id
 
+    def stream_pull_image(self, pull_image):
+         stdscr = curses.initscr()
+         curses.noecho()
+         curses.cbreak()
+         id_list = []
+         client = docker.APIClient(base_url='unix://var/run/docker.sock')
+         try:
+             for line in client.pull(pull_image,stream=True, decode=True):
+                 if 'progress' not in line:
+                     continue
+                 if line['id'] not in id_list:
+                     id_list += [line['id']]
+                 stdscr.addstr(id_list.index(line['id']), 0, "{0} {1}".format(line['id'],line['progress']))
+                 stdscr.refresh()
+         finally:
+             curses.echo()
+             curses.nocbreak()
+             curses.endwin()
 
     def start_container(self, container_id):
         # need to check if bucket config has changed since last run
