@@ -675,10 +675,23 @@ class DockerHelper():
 
     @staticmethod
     def stream_pull_image(pull_image):
+        import datetime
+        def truncate_secs(delta_time, fmt=":%.2d"):
+            delta_str = str(delta_time).split(':')
+            return ":".join(delta_str[:-1]) + fmt%(float(delta_str[-1]))
+        def update_bar(sum_total,accumulated,t0,current_time, scale=0.5):
+            percentage = accumulated/sum_total*100
+            nchars = int(percentage*scale)
+            bar = "\r["+nchars*"="+">"+(int(100*scale)-nchars)*" "+"]"
+            time_info = "Elapsed time: %s"%truncate_secs(current_time - t0)
+            print(bar+" %5.2f %%, %5.3f/%4.2fGB %s"%(percentage,
+                accumulated/1024**3,sum_total/1024**3,time_info),end="")
+
         client = docker.APIClient(base_url='unix://var/run/docker.sock')
         id_list = []
         id_current = []
         id_total = 0
+        t0 = prev_time = datetime.datetime.now()
         try:
             for line in client.pull(pull_image,stream=True, decode=True):
                 if 'progress' not in line:
@@ -690,12 +703,12 @@ class DockerHelper():
                     id_total += line['progressDetail']['total']
                 else:
                     id_current[id_list.index(line['id'])] = line_current
-                current = 0
-                for current0 in id_current:
-                     current += current0
-                percentage = current/id_total*100
-                bar = int(percentage)*"="+">"+(100-int(percentage))*" "
-                print("\r[%s] %5.2f %%"%(bar,percentage),end="")
+                current_time = datetime.datetime.now()
+                if (current_time-prev_time).total_seconds()<1:
+                    continue
+                prev_time = current_time
+                update_bar(id_total,sum(id_current),t0,current_time)
+            update_bar(id_total,sum(id_current),t0,current_time)
         except:
             print("\nError pulling image %s"%pull_image)
         print() # to avoid erasing the progress bar at the end
