@@ -462,6 +462,10 @@ class BucketManager():
             kwargs['pull_image'] = bucket['docker']['pull_image']
             container_id = self.dockerhelper.create_container(**kwargs)
 
+            if container_id is None:
+                print("ERROR: Failed to create container")
+                return False
+
             self.buckets[ind]['docker']['container'] = container_id
             self.save_config()
 
@@ -662,7 +666,10 @@ class DockerHelper():
         if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            DockerHelper.stream_pull_image(pull_image)
+            status = self.stream_pull_image(pull_image)
+            if not status:
+                print("ERROR: Failed to pull image")
+                return None
             image = self.docker.images.get(pull_image)
             repo,digest = pull_image.split('@')
             # When pulling from repodigest sha256 no tag is assigned. So:
@@ -673,8 +680,7 @@ class DockerHelper():
 
         return container_id.id
 
-    @staticmethod
-    def stream_pull_image(pull_image):
+    def stream_pull_image(self,pull_image):
         import datetime
         def truncate_secs(delta_time, fmt=":%.2d"):
             delta_str = str(delta_time).split(':')
@@ -687,6 +693,9 @@ class DockerHelper():
             print(bar+" %5.2f %%, %5.3f/%4.2fGB %s"%(percentage,
                 accumulated/1024**3,sum_total/1024**3,time_info),end="")
 
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # TODO: Test if base_url below is platform independent
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         client = docker.APIClient(base_url='unix://var/run/docker.sock')
         id_list = []
         id_current = []
@@ -698,20 +707,26 @@ class DockerHelper():
                     continue
                 line_current = line['progressDetail']['current']
                 if line['id'] not in id_list:
-                    id_list += [line['id']]
-                    id_current += [line_current]
+                    id_list.append(line['id'])
+                    id_current.append(line_current)
                     id_total += line['progressDetail']['total']
                 else:
                     id_current[id_list.index(line['id'])] = line_current
                 current_time = datetime.datetime.now()
                 if (current_time-prev_time).total_seconds()<1:
+                    # To limit print statements to no more than 1 per second.
                     continue
                 prev_time = current_time
                 update_bar(id_total,sum(id_current),t0,current_time)
+            # Last update of the progress bar:
             update_bar(id_total,sum(id_current),t0,current_time)
         except:
             print("\nError pulling image %s"%pull_image)
+            return False
+
         print() # to avoid erasing the progress bar at the end
+
+        return True
 
     def start_container(self, container_id):
         # need to check if bucket config has changed since last run
