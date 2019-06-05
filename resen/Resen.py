@@ -308,7 +308,7 @@ class BucketManager():
         child = Path(container)
         for loc in self.storage_whitelist:
             p = Path(loc)
-            if p == child or in child.parents:
+            if p == child or p in child.parents:
                 valid = True
         if not valid:
             print("ERROR: Invalid mount location. Can only mount storage into: %s." % ', '.join(self.storage_whitelist))
