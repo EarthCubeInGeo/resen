@@ -33,6 +33,8 @@ To get more information about a specific command, enter ``help <command>``.
 Resen Workflow
 ==============
 
+Use Resen to start, stop, and manage resen buckets.  Buckets are portable, system independent environments where code can be developed and run.  Buckets can be shared between systems and the code in it will run exactly the same way.  Resen buckets come preinstalled with a variety of common geospace software that can be used immediately in analysis.
+
 Setup a New Bucket
 ------------------
 
@@ -87,7 +89,7 @@ The status of ``amber`` should now be ``running``::
 
 	[resen] >>> start_jupyter amber 8000 8080
 
-The jupyter server starts in the ``/home/jovyan/work`` directory, which should include the persistent storage directories ``fossil`` and ``data``. Alternatively you can start directly a jupyter lab adding ``--lab`` to the prevoius command::
+The jupyter server starts in the ``/home/jovyan/work`` directory, which should include the persistent storage directories ``fossil`` and ``data``. Alternatively you can start directly a jupyter lab adding ``--lab`` to the previous command::
 
 	[resen] >>> start_jupyter amber 8000 8080 --lab
 	

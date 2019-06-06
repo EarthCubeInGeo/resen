@@ -6,7 +6,7 @@ Resen (REproducible Software ENvironment), is a tool that enables reproducible s
 
 Resen is based on the concept of portable environments, or buckets, where code can be developed and run independent of a users system.  When you start a resen bucket, it has a variety of common geospace software packages preinstalled and ready for use.  This means you have easy access to common models and datasets, and can start using them in your analysis immediately.  You can also set up your bucket to access your own datasets, locally stored on your machine.
 
-After you have completed your analysis, you can share an entire bucket with other researchers.  Within the bucket, your analysis code will always run exactly the same way, regardless of what system the bucket is on.  This means that other researchers should be able to reproduce your work and start building off of it immediately, instead of spending time configuring their system, installing new packages, and setting up file paths so their environment is compatable with your code.
+After you have completed your analysis, you can share an entire bucket with other researchers.  Within the bucket, your analysis code will always run exactly the same way, regardless of what system the bucket is on.  This means that other researchers should be able to reproduce your work and start building off of it immediately, instead of spending time configuring their system, installing new packages, and setting up file paths so their environment is compatible with your code.
 
 
 Quickstart
