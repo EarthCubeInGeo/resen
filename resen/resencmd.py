@@ -69,7 +69,7 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
             local_path = self.get_valid_path(msg)
             container_path = '/home/jovyan/work'
             permissions = 'rw'
-            mounts.append(local_path,container_path,permissions)
+            mounts.append([local_path,container_path,permissions])
 
         # query for more mounts
         while True:
@@ -86,7 +86,7 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                 valid_inputs = ['r','rw']
                 msg = '>>> Enter permissions (r/rw): '
                 permissions = self.get_valid_input(msg,valid_inputs)
-                mounts.append(local_path,container_path,permissions)
+                mounts.append([local_path,container_path,permissions])
 
         # should we start jupyterlab when done creating bucket?
         valid_inputs = ['y','n']
