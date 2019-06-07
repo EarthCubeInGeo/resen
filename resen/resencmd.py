@@ -125,7 +125,6 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                 # start jupyterlab
                 print("...starting jupyterlab...")
                 status = self.program.start_jupyter(bucket_name,local_port,container_port,lab=True)
-            else:
         else:
             print("Failed to create bucket!")
             status = self.program.remove_bucket(bucket_name)
