@@ -682,9 +682,11 @@ class DockerHelper():
 
     def stream_pull_image(self,pull_image):
         import datetime
+        # time formatting
         def truncate_secs(delta_time, fmt=":%.2d"):
             delta_str = str(delta_time).split(':')
             return ":".join(delta_str[:-1]) + fmt%(float(delta_str[-1]))
+        # progress bar
         def update_bar(sum_total,accumulated,t0,current_time, scale=0.5):
             percentage = accumulated/sum_total*100
             nchars = int(percentage*scale)
@@ -693,16 +695,13 @@ class DockerHelper():
             print(bar+" %5.2f %%, %5.3f/%4.2fGB %s"%(percentage,
                 accumulated/1024**3,sum_total/1024**3,time_info),end="")
 
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # TODO: Test if base_url below is platform independent
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        client = docker.APIClient(base_url='unix://var/run/docker.sock')
         id_list = []
         id_current = []
         id_total = 0
         t0 = prev_time = datetime.datetime.now()
         try:
-            for line in client.pull(pull_image,stream=True, decode=True):
+            # Use a lower level pull call to stream the pull
+            for line in self.docker.api.pull(pull_image,stream=True, decode=True):
                 if 'progress' not in line:
                     continue
                 line_current = line['progressDetail']['current']
