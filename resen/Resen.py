@@ -719,6 +719,9 @@ class DockerHelper():
                 update_bar(id_total,sum(id_current),t0,current_time)
             # Last update of the progress bar:
             update_bar(id_total,sum(id_current),t0,current_time)
+        except (KeyboardInterrupt, SystemExit):
+            print("\nPulling of the image has been interrupted.")
+            return False
         except Exception as e:
             print("\nException encountered while pulling image %s" % pull_image)
             print("Exception: %s" % str(e))
