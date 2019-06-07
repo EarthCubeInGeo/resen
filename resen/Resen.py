@@ -719,8 +719,9 @@ class DockerHelper():
                 update_bar(id_total,sum(id_current),t0,current_time)
             # Last update of the progress bar:
             update_bar(id_total,sum(id_current),t0,current_time)
-        except:
-            print("\nError pulling image %s"%pull_image)
+        except Exception as e:
+            print("\nException encountered while pulling image %s" % pull_image)
+            print("Exception: %s" % str(e))
             return False
 
         print() # to avoid erasing the progress bar at the end
