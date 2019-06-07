@@ -11,7 +11,6 @@
 #
 ####################################################################
 
-import os
 import sys
 import cmd         # for command line interface
 import shlex
@@ -67,7 +66,7 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
         answer = self.get_valid_input(msg,valid_inputs)
         if answer == 'y':
             msg = '>>> Enter local path: '
-            local_path = self.get_valid_path(msg,local=True)
+            local_path = self.get_valid_path(msg)
             container_path = '/home/jovyan/work'
             # valid_inputs = ['r','rw']
             # msg = '>>> Enter permissions (r/rw): '
@@ -82,9 +81,9 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                 break
             else:
                 msg = '>>> Enter local path: '
-                local_path = self.get_valid_path(msg,local=True)
+                local_path = self.get_valid_path(msg)
                 msg = '>>> Enter bucket path: '
-                container_path = self.get_valid_path(msg,local=False,base='/mnt')
+                container_path = self.get_valid_path(msg,base='/mnt')
                 valid_inputs = ['r','rw']
                 msg = '>>> Enter permissions (r/rw): '
                 permissions = self.get_valid_input(msg,valid_inputs)
@@ -304,14 +303,10 @@ use "" for paths with spaces in them
             else:
                 print("Invalid input. Valid inputs are: %s" % valid_msg)
 
-    def get_valid_path(self,msg,base=None,local=True):
+    def get_valid_path(self,msg,base=None):
         while True:
             answer = input(msg)
-            if local and os.name == 'nt':
-                path = pathlib.PureWindowsPath(answer)
-            else:
-                path = pathlib.PurePosixPath(answer)
-        
+            path = pathlib.PurePosixPath(answer)
             if not base is None:
                 if base in [str(x) for x in list(path.parents)]:
                     return str(path)
