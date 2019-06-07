@@ -75,7 +75,7 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
 
         while True:
             valid_inputs = ['y','n']
-            msg = '>>> Mount additional storage to /mnt? (y/n): '
+            msg = '>>> Mount additional storage to /home/jovyan/mount? (y/n): '
             answer = self.get_valid_input(msg,valid_inputs)
             if answer == 'n':
                 break
@@ -83,7 +83,7 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                 msg = '>>> Enter local path: '
                 local_path = self.get_valid_path(msg)
                 msg = '>>> Enter bucket path: '
-                container_path = self.get_valid_path(msg,base='/mnt')
+                container_path = self.get_valid_path(msg,base='/home/jovyan/mount')
                 valid_inputs = ['r','rw']
                 msg = '>>> Enter permissions (r/rw): '
                 permissions = self.get_valid_input(msg,valid_inputs)
