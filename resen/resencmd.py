@@ -30,6 +30,8 @@ class ResenCmd(cmd.Cmd):
         # get current state of buckets
 
     # --------------- resen stuff --------------------
+    # try to create a bucket by guiding user
+    # if 
     def do_create_bucket(self,args):
         """Usage:
 create_bucket bucket_name : Create a new bucket with name bucket_name. Must start with a letter, <=20 characters, and no spaces."""
@@ -45,34 +47,31 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
             print("Syntax Error. Usage: create_bucket bucket_name")
             return
 
-        print("Creating bucket with name: %s" % bucket_name)
-        status = self.program.create_bucket(bucket_name)
-
-        # ask user about resen-core version
+        # First, ask user about the bucket they want to create
+        # resen-core version?
         valid_versions = sorted([x['version'] for x in self.program.bucket_manager.valid_cores])
         print('Please choose a version of resen-core. Available versions: %s' % ", ".join(valid_versions))
         msg = '>>> Select a version: '
         docker_image = self.get_valid_input(msg,valid_versions)
-        status = self.program.add_image(bucket_name,docker_image)
 
-        # figure out a port to use
+
+        # Figure out a port to use
         local_port = self.get_port()
         container_port = local_port
-        status = self.program.add_port(bucket_name,local_port,container_port,tcp=True)
 
-        # ask user about storage
+        # Ask user about storage locations to mount
+        mounts = list()
         valid_inputs = ['y','n']
-        msg = '>>> Mount storage to ~/work? (y/n): '
+        msg = '>>> Mount storage to /home/jovyan/work? (y/n): '
         answer = self.get_valid_input(msg,valid_inputs)
         if answer == 'y':
             msg = '>>> Enter local path: '
             local_path = self.get_valid_path(msg)
             container_path = '/home/jovyan/work'
-            # valid_inputs = ['r','rw']
-            # msg = '>>> Enter permissions (r/rw): '
-            permissions = 'rw' #self.get_valid_input(msg,valid_inputs)
-            status = self.program.add_storage(bucket_name,local_path,container_path,permissions)
+            permissions = 'rw'
+            mounts.append(local_path,container_path,permissions)
 
+        # query for more mounts
         while True:
             valid_inputs = ['y','n']
             msg = '>>> Mount additional storage to /home/jovyan/mount? (y/n): '
@@ -87,14 +86,49 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                 valid_inputs = ['r','rw']
                 msg = '>>> Enter permissions (r/rw): '
                 permissions = self.get_valid_input(msg,valid_inputs)
-                status = self.program.add_storage(bucket_name,local_path,container_path,permissions)        
+                mounts.append(local_path,container_path,permissions)
 
-        # start bucket
-        status = self.program.start_bucket(bucket_name)
+        # should we start jupyterlab when done creating bucket?
+        valid_inputs = ['y','n']
+        msg = '>>> Start bucket and jupyterlab? (y/n): '
+        start = self.get_valid_input(msg,valid_inputs) == 'y'
 
-        # start jupyterlab
-        status = self.program.start_jupyter(bucket_name,local_port,container_port,lab=True)
+        # Now that we have the bucket creation recipe, let's actually create it.
+        print("Creating bucket with name: %s" % bucket_name)
+        status = self.program.create_bucket(bucket_name)
+        if not status:
+            print("Failed to create bucket!")
+            return
 
+        success = True
+        print("...adding core...")
+        status = self.program.add_image(bucket_name,docker_image)
+        success = success and status
+        if status:
+            status = self.program.add_port(bucket_name,local_port,container_port,tcp=True)
+            success = success and status
+            if status:
+                print("...adding mounts...")
+                for mount in mounts:
+                    status = self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
+                    success = success and status
+                    if not status:
+                        print("    Failed to mount storage!")
+
+        if success:
+            print("Bucket created successfully!")
+            if start:
+                # start bucket
+                status = self.program.start_bucket(bucket_name)
+                if not status:
+                    return
+                # start jupyterlab
+                print("...starting jupyterlab...")
+                status = self.program.start_jupyter(bucket_name,local_port,container_port,lab=True)
+            else:
+        else:
+            print("Failed to create bucket!")
+            status = self.program.remove_bucket(bucket_name)
 
     def do_start_bucket(self,args):
         """Usage:
@@ -181,76 +215,76 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
 
         status = self.program.start_jupyter(bucket_name,local_port,bucket_port,lab=lab)
 
-    def do_add_storage(self,args):
-        """Usage:
->>> add_storage bucket_name local_path container_path permissions : Add a local_path storage location available at container_path.
-use "" for paths with spaces in them
-- permissions should be 'r' or 'rw'
-        """
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 4:
-            print("Syntax Error. Usage: add_storage bucket_name local_path container_path permissions")
-            return
-        bucket_name = inputs[0]
-        local_path = inputs[1]
-        container_path = inputs[2]
-        permissions = inputs[3]
+#     def do_add_storage(self,args):
+#         """Usage:
+# >>> add_storage bucket_name local_path container_path permissions : Add a local_path storage location available at container_path.
+# use "" for paths with spaces in them
+# - permissions should be 'r' or 'rw'
+#         """
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 4:
+#             print("Syntax Error. Usage: add_storage bucket_name local_path container_path permissions")
+#             return
+#         bucket_name = inputs[0]
+#         local_path = inputs[1]
+#         container_path = inputs[2]
+#         permissions = inputs[3]
 
-        status = self.program.add_storage(bucket_name,local_path,container_path,permissions)
+#         status = self.program.add_storage(bucket_name,local_path,container_path,permissions)
 
-    def do_remove_storage(self,args):
-        """Usage:
->>> remove_storage bucket_name local_path : Remove the local_path storage location in bucket bucket_name.
-use "" for paths with spaces in them
-        """
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 2:
-            print("Syntax Error. Usage: remove_storage bucket_name local_path")
-            return
-        bucket_name = inputs[0]
-        local_path = inputs[1]
+#     def do_remove_storage(self,args):
+#         """Usage:
+# >>> remove_storage bucket_name local_path : Remove the local_path storage location in bucket bucket_name.
+# use "" for paths with spaces in them
+#         """
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 2:
+#             print("Syntax Error. Usage: remove_storage bucket_name local_path")
+#             return
+#         bucket_name = inputs[0]
+#         local_path = inputs[1]
 
-        status = self.program.remove_storage(bucket_name,local_path)
+#         status = self.program.remove_storage(bucket_name,local_path)
 
-    def do_add_port(self,args):
-        """Usage:
->>> add_port bucket_name local_port container_port\t: Map container_port available at local_port.
->>> add_port bucket_name local_port container_port --udp\t: Map container_port available at local_port.
-        """
-        inputs,num_inputs = self.parse_args(args)
+#     def do_add_port(self,args):
+#         """Usage:
+# >>> add_port bucket_name local_port container_port\t: Map container_port available at local_port.
+# >>> add_port bucket_name local_port container_port --udp\t: Map container_port available at local_port.
+#         """
+#         inputs,num_inputs = self.parse_args(args)
 
-        tcp = True
-        if num_inputs == 3:
-            pass
-        elif num_inputs == 4:
-            if inputs[3][0] == '-':
-                if inputs[3] == '--udp':
-                    tcp = False
-                else:
-                    print("Syntax Error. See 'help add_port'")
-                    return
-        else:
-            print("Syntax Error. See 'help add_port'")
-            return
+#         tcp = True
+#         if num_inputs == 3:
+#             pass
+#         elif num_inputs == 4:
+#             if inputs[3][0] == '-':
+#                 if inputs[3] == '--udp':
+#                     tcp = False
+#                 else:
+#                     print("Syntax Error. See 'help add_port'")
+#                     return
+#         else:
+#             print("Syntax Error. See 'help add_port'")
+#             return
 
-        bucket_name = inputs[0]
-        local_port = int(inputs[1])
-        container_port = int(inputs[2])
+#         bucket_name = inputs[0]
+#         local_port = int(inputs[1])
+#         container_port = int(inputs[2])
 
-        status = self.program.add_port(bucket_name,local_port,container_port,tcp=tcp)
+#         status = self.program.add_port(bucket_name,local_port,container_port,tcp=tcp)
 
-    def do_remove_port(self,args):
-        """Usage:
->>> remove_port bucket_name local_port : Remove the local_port mapping from bucket bucket_name.
-        """
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 2:
-            print("Syntax Error. Usage: remove_port bucket_name local_port")
-            return
-        bucket_name = inputs[0]
-        local_port = int(inputs[1])
+#     def do_remove_port(self,args):
+#         """Usage:
+# >>> remove_port bucket_name local_port : Remove the local_port mapping from bucket bucket_name.
+#         """
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 2:
+#             print("Syntax Error. Usage: remove_port bucket_name local_port")
+#             return
+#         bucket_name = inputs[0]
+#         local_port = int(inputs[1])
 
-        status = self.program.remove_port(bucket_name,local_port)
+#         status = self.program.remove_port(bucket_name,local_port)
 
     # def do_import(self):
     #     """import : Print the status of all resen buckets."""
@@ -326,7 +360,6 @@ use "" for paths with spaces in them
                 return port
             else:
                 port += 1
-
 
 
 def main():
