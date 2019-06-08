@@ -118,10 +118,7 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
         if success:
             print("Bucket created successfully!")
             if start:
-                # start bucket
-                status = self.program.start_bucket(bucket_name)
-                if not status:
-                    return
+                # bucket should already be running
                 # start jupyterlab
                 print("...starting jupyterlab...")
                 status = self.program.start_jupyter(bucket_name,local_port,container_port,lab=True)

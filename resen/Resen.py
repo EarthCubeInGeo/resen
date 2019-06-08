@@ -638,13 +638,15 @@ class DockerHelper():
         image_name = input_kwargs.get('image_name',None)
         image_id = input_kwargs.get('image_id',None)
         pull_image = input_kwargs.get('pull_image',None)
-
+        nb_uid = input_kwargs.get('nb_uid',os.getuid())
+        nb_gid = input_kwargs.get('nb_gid',os.getgid())
 
         # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
         create_kwargs = dict()
         create_kwargs['name'] = self.container_prefix + bucket_name
-        create_kwargs['command'] = 'bash'
+        create_kwargs['command'] = '/usr/local/bin/start.sh bash'
         create_kwargs['tty'] = True
+        create_kwargs['environment'] = ['NB_UID=%s' % nb_uid, 'NB_GID=%s' % nb_gid]
         create_kwargs['ports'] = dict()
 
         for host, container, tcp in ports:
@@ -677,7 +679,11 @@ class DockerHelper():
             print("Done!")
 
         container_id = self.docker.containers.create(image_id,**create_kwargs)
-
+        status = self.start_container(container_id.id)
+        # setup the user and group permissions
+        result = container_id.exec_run(create_kwargs['command'],
+                                       environment=create_kwargs['environment'],
+                                       user='root',detach=True)
         return container_id.id
 
     def stream_pull_image(self,pull_image):
