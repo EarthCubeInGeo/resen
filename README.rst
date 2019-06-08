@@ -2,7 +2,7 @@ Resen
 *****
 Resen (REproducible Software ENvironment), is a tool that enables reproducible scientific data analysis, built using python and docker.  It is designed to make it easier for geospace researchers to share analysis and results, as well as build off of work others have done.  Resen was developed under the InGeO project, currently supported by the National Science Foundation's Cyberinfrastructure for Sustained Scientific Innovation (CSSI) program (Grant \#1835573).  For more information about the InGeO project, please visit the `InGeO website <https://ingeo.datatransport.org>`_.
 
-.. image:: resen_consept.png
+.. image:: resen_concept.png
 
 Resen is based on the concept of portable environments, or buckets, where code can be developed and run independent of a users system.  When you start a resen bucket, it has a variety of common geospace software packages preinstalled and ready for use.  This means you have easy access to common models and datasets, and can start using them in your analysis immediately.  You can also set up your bucket to access your own datasets, locally stored on your machine.
 
