@@ -11,6 +11,7 @@ Contents
 
    readme
    installation
+   installation_windows
    usage
 
 
