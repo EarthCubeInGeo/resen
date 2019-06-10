@@ -47,6 +47,13 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
             print("Syntax Error. Usage: create_bucket bucket_name")
             return
 
+        # check if creating bucket with name bucket_name is possible:
+        print("Creating bucket with name: %s" % bucket_name)
+        status = self.program.create_bucket(bucket_name)
+        if not status:
+            print("Failed to create bucket!")
+            return
+
         # First, ask user about the bucket they want to create
         # resen-core version?
         valid_versions = sorted([x['version'] for x in self.program.bucket_manager.valid_cores])
@@ -92,13 +99,6 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
         valid_inputs = ['y','n']
         msg = '>>> Start bucket and jupyterlab? (y/n): '
         start = self.get_valid_input(msg,valid_inputs) == 'y'
-
-        # Now that we have the bucket creation recipe, let's actually create it.
-        print("Creating bucket with name: %s" % bucket_name)
-        status = self.program.create_bucket(bucket_name)
-        if not status:
-            print("Failed to create bucket!")
-            return
 
         success = True
         print("...adding core...")
