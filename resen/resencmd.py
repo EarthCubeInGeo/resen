@@ -35,24 +35,11 @@ class ResenCmd(cmd.Cmd):
     def do_create_bucket(self,args):
         """Usage:
 create_bucket bucket_name : Create a new bucket with name bucket_name. Must start with a letter, <=20 characters, and no spaces."""
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 1:
-            print("Syntax Error")
-            return
 
-        bucket_name = inputs[0]
-        # check if bucket_name has spaces in it and is greater than 20 characters
-        # also bucket name must start with a letter
-        if ' ' in bucket_name or len(bucket_name) > 20 or not bucket_name[0].isalpha():
-            print("Syntax Error. Usage: create_bucket bucket_name")
-            return
-
-        # check if creating bucket with name bucket_name is possible:
-        print("Creating bucket with name: %s" % bucket_name)
-        status = self.program.create_bucket(bucket_name)
-        if not status:
-            print("Failed to create bucket!")
-            return
+        # First, ask user for bucket name
+        print('Please enter a name for your bucket.  Valid names must be less than 20 characters and start with an aphabetic character')
+        msg = '>>> Enter bucket name: '
+        bucket_name = self.get_valid_name(msg)
 
         # First, ask user about the bucket they want to create
         # resen-core version?
@@ -66,23 +53,29 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
         local_port = self.get_port()
         container_port = local_port
 
-        # Ask user about storage locations to mount
+        # Mounting persistent storage
+        print('Local directories can be mounted to either /home/jovyan/work/ or /home/jovyan/mount/ in a bucket.  You will have rw privileges to everything mounted in work, but can specified permissions as either r or rw for directories in mount.  Code and data created in a bucket can ONLY be accessed outside the bucket or after the bucket has been deleted if it is saved in a mounted local directory.')
         mounts = list()
-        valid_inputs = ['y','n']
+
         msg = '>>> Mount storage to /home/jovyan/work? (y/n): '
-        answer = self.get_valid_input(msg,valid_inputs)
-        if answer == 'y':
-            msg = '>>> Enter local path: '
-            local_path = self.get_valid_path(msg)
-            container_path = '/home/jovyan/work'
-            permissions = 'rw'
-            mounts.append([local_path,container_path,permissions])
+        while True:
+            answer = self.get_yn(msg)
+            if answer == 'n':
+                break
+            else:
+                msg = '>>> Enter local path: '
+                local_path = self.get_valid_path(msg)
+                # container_path = '/home/jovyan/work'
+                msg = '>>> Enter bucket path: '
+                container_path = self.get_valid_path(msg,base='/home/jovyan/work')
+                permissions = 'rw'
+                mounts.append([local_path,container_path,permissions])
+                msg = '>>> Mount additional storage to /home/jovyan/work? (y/n): '
 
         # query for more mounts
+        msg = '>>> Mount storage to /home/jovyan/mount? (y/n): '
         while True:
-            valid_inputs = ['y','n']
-            msg = '>>> Mount additional storage to /home/jovyan/mount? (y/n): '
-            answer = self.get_valid_input(msg,valid_inputs)
+            answer = self.get_yn(msg)
             if answer == 'n':
                 break
             else:
@@ -94,11 +87,11 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                 msg = '>>> Enter permissions (r/rw): '
                 permissions = self.get_valid_input(msg,valid_inputs)
                 mounts.append([local_path,container_path,permissions])
+                msg = '>>> Mount additional storage to /home/jovyan/mount? (y/n): '
 
         # should we start jupyterlab when done creating bucket?
-        valid_inputs = ['y','n']
         msg = '>>> Start bucket and jupyterlab? (y/n): '
-        start = self.get_valid_input(msg,valid_inputs) == 'y'
+        start = self.get_yn(msg) == 'y'
 
         success = True
         print("...adding core...")
@@ -318,6 +311,35 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         inputs = shlex.split(args)
         num_inputs = len(inputs)
         return inputs,num_inputs
+
+    def get_yn(self,msg):
+        valid_inputs = ['y', 'n']
+        while True:
+            answer = input(msg)
+            if answer in valid_inputs:
+                return answer
+            else:
+                print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
+
+    def get_valid_name(self,msg):
+        while True:
+            name = input(msg)
+
+            # check if bucket_name has spaces in it and is greater than 20 characters
+            # also bucket name must start with a letter
+            if ' ' in name:
+                print("Bucket names may not contain spaces.")
+            elif len(name) > 20:
+                print("Bucket names must be less than 20 characters.")
+            elif not name[0].isalpha():
+                print("Bucket names must start with alphabetic characters.")
+            else:
+                # check if bucket with that name already exists
+                status = self.program.create_bucket(name)
+                if not status:
+                    print("Cannot use the same name as an existing bucket!")
+                else:
+                    return name
 
     def get_valid_input(self,msg,valid_inputs):
         if len(valid_inputs) == 1:
