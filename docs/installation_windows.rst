@@ -49,17 +49,18 @@ Docker Toolbox essentially works by running docker inside of a Linux virtual mac
 
 3. Now we need to add port forwarding and check the shared folders for the Docker VM in VirtualBox. To do this, open VirtualBox and open the "Settings" for the "default" VM, like so:
 
-``TODO: insert screenshot``
+.. image:: images/vbox.png
 
 Add a new port forwarding rule by navigating to Settings->Network->Adapter 1->Advanced->Port Forwarding:
 
-``TODO: insert screenshot``
+.. image:: images/port_forward.png
 
 Here, we need to add a port forwarding rule for each bucket we create in Resen. Resen requires port 9000 for one bucket and then increments by 1 for every new bucket created. This means that if you have 5 buckets, you will need to make a port forward rule for ports 9000, 9001, 9002, 9003, and 9004. Change both the Host and Guest Ports as seen in the above screenshot.
 
 Now we can optionally add Shared Folders. By default, Docker Toolbox shares the ``C:\Users`` directory with the Docker VM at ``/c/Users``. This means that directories in ``C:\Users`` will be available to mount into a Resen bucket via the ``/c/Users`` Shared Folder in VirtualBox. If additional shared directory locations are desired add them. For example:
 
-``TODO: insert screenshot``
+.. image:: images/shared_folder.png
+.. image:: images/add_shared_folder.png
 
 makes an additional location, ``D:\ashto`` available to the Docker VM at the location ``/d/ashto`` so that any directories in ``D:\ashto`` can be mounted into a resen bucket via ``/d/ashto``. After adding or removing Shared Folders, you must restart the Docker VM. This can be done by running:
 
