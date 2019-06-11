@@ -523,7 +523,7 @@ class BucketManager():
 
         if bucket['docker']['status'] in ['running']:
             # then we can start the container and update status
-            result = self.dockerhelper.execute_command(bucket['docker']['container'],command)
+            result = self.dockerhelper.execute_command(bucket['docker']['container'],command,detach=detach)
             status, output = result
             if (detach and status is None) or (not detach and status==0):
                 return True
@@ -728,9 +728,12 @@ class DockerHelper():
 
         return True
 
-    def start_container(self, container_id):
+    def start_container(self, container_id, **input_kwargs):
         # need to check if bucket config has changed since last run
         # need to check if bucket is already running
+        nb_uid = input_kwargs.get('nb_uid',os.getuid())
+        nb_gid = input_kwargs.get('nb_gid',os.getgid())
+
         container = self.get_container(container_id)
         if container is None:
             return False
@@ -740,17 +743,30 @@ class DockerHelper():
         time.sleep(0.1)
 
         if container.status == 'running':
-            return True
+            # The container only starts once, and here, before using it or
+            # starting jupyter we need to set the NB_UID and NB_GID of the
+            # user space
+            print("\nConfiguring user space. This might take some time...")
+            cmd = "/usr/local/bin/start.sh"
+            environment = ["NB_UID=%s"%nb_uid, "NB_GID=%s"%nb_gid]
+            # change UID, GID, useful for linux systems
+            status = self.execute_command(container_id,cmd,detach=False,
+                    environment=environment)
+            if status:
+                print("done.")
+                return True
+            else:
+                return False
         else:
             return False
 
 
-    def execute_command(self,container_id,command,detach=True):
+    def execute_command(self,container_id,command,detach=True,environment=None):
         container = self.get_container(container_id)
         if container is None:
             return False
 
-        result = container.exec_run(command,detach=detach)
+        result = container.exec_run(command,detach=detach,environment=environment)
         return result.exit_code, result.output
 
 
