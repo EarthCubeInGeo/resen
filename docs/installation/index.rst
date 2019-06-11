@@ -8,7 +8,7 @@ Installation
 
 .. toctree::
    :maxdepth: 2
-   general
-   windows
+   installation/general
+   installation/windows
 
 
