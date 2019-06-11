@@ -39,7 +39,6 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
 
         # First, ask user for bucket name
         print('Please enter a name for your bucket.')
-        # msg = '>>> Enter bucket name: '
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
         # First, ask user about the bucket they want to create
@@ -169,29 +168,43 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
 
     def do_start_jupyter(self,args):
         """Usage:
->>> start_jupyter bucket_name local_port bucket_port\t: Start a jupyter notebook server on port bucket_port available at local_port.
->>> start_jupyter bucket_name local_port bucket_port --lab\t: Start a jupyter lab server on port bucket_port available at local_port.
+>>> start_jupyter bucket_name
         """
         inputs,num_inputs = self.parse_args(args)
-        lab = False
-        if num_inputs == 3:
+
+        if num_inputs == 1:
             pass
-        elif num_inputs == 4:
-            if inputs[3][0] == '-':
-                if inputs[3] == '--lab':
-                    lab = True
-                else:
-                    print("Syntax Error. See 'help start_jupyter'.")
-                    return
         else:
             print("Syntax Error. See 'help start_jupyter'.")
             return
 
-        bucket_name = inputs[0]
-        local_port = int(inputs[1])
-        bucket_port = int(inputs[2])
 
-        status = self.program.start_jupyter(bucket_name,local_port,bucket_port,lab=lab)
+        # get bucket name from input
+        bucket_name = inputs[0]
+        lab = True
+
+        # get bucket infomrmation (ports and status)
+        # This stuff may be better suited to exist in some kind of "status query" inside of Resen.py
+        ind = self.program.bucket_manager.bucket_names.index(bucket_name)
+        bucket = self.program.bucket_manager.buckets[ind]
+        # This automatically selects the first port in the list of ports
+        # TODO: Manage multiple ports assigned to one bucket
+        ports = bucket['docker']['port'][0]
+        running_status = bucket['docker']['status']
+
+
+        # if bucket is not running, first start bucket
+        if running_status != 'running':
+            status = self.program.start_bucket(bucket_name)
+
+        # check if jupyter server running
+
+        # then start jupyter 
+        status = self.program.start_jupyter(bucket_name,ports[0],ports[1],lab=lab)
+
+
+
+
 
 #     def do_add_storage(self,args):
 #         """Usage:
