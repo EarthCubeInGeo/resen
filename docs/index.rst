@@ -7,10 +7,12 @@ Contents
 ********
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    readme
-   installation/index
+   installation
+   installation/general
+   installation/windows
    usage
 
 
