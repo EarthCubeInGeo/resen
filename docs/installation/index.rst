@@ -8,14 +8,7 @@ Installation
 
 .. toctree::
    :maxdepth: 2
+   general
+   windows
 
-   installation_windows
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

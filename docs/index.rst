@@ -10,7 +10,6 @@ Contents
    :maxdepth: 1
 
    readme
-   installation
    installation/index
    usage
 

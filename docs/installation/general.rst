@@ -1,5 +1,5 @@
-Installation
-************
+Gerneral Instructions
+*********************
 
 Resen is built off of both python 3 and docker, so you must have both of these installed for Resen to function.
 
