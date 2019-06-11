@@ -17,6 +17,7 @@ import shlex
 import resen
 import socket
 import pathlib
+import os
 
 version = resen.__version__
 
@@ -34,19 +35,18 @@ class ResenCmd(cmd.Cmd):
     # if 
     def do_create_bucket(self,args):
         """Usage:
-create_bucket bucket_name : Create a new bucket with name bucket_name. Must start with a letter, <=20 characters, and no spaces."""
+create_bucket : Create a new bucket by responding to the prompts provided."""
 
         # First, ask user for bucket name
-        print('Please enter a name for your bucket.  Valid names must be less than 20 characters and start with an aphabetic character')
-        msg = '>>> Enter bucket name: '
-        bucket_name = self.get_valid_name(msg)
+        print('Please enter a name for your bucket.')
+        # msg = '>>> Enter bucket name: '
+        bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
         # First, ask user about the bucket they want to create
         # resen-core version?
         valid_versions = sorted([x['version'] for x in self.program.bucket_manager.valid_cores])
-        print('Please choose a version of resen-core. Available versions: %s' % ", ".join(valid_versions))
-        msg = '>>> Select a version: '
-        docker_image = self.get_valid_input(msg,valid_versions)
+        print('Please choose a version of resen-core.')
+        docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
 
 
         # Figure out a port to use
@@ -57,37 +57,23 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
         print('Local directories can be mounted to either /home/jovyan/work/ or /home/jovyan/mount/ in a bucket.  You will have rw privileges to everything mounted in work, but can specified permissions as either r or rw for directories in mount.  Code and data created in a bucket can ONLY be accessed outside the bucket or after the bucket has been deleted if it is saved in a mounted local directory.')
         mounts = list()
 
-        msg = '>>> Mount storage to /home/jovyan/work? (y/n): '
-        while True:
-            answer = self.get_yn(msg)
-            if answer == 'n':
-                break
-            else:
-                msg = '>>> Enter local path: '
-                local_path = self.get_valid_path(msg)
-                # container_path = '/home/jovyan/work'
-                msg = '>>> Enter bucket path: '
-                container_path = self.get_valid_path(msg,base='/home/jovyan/work')
-                permissions = 'rw'
-                mounts.append([local_path,container_path,permissions])
-                msg = '>>> Mount additional storage to /home/jovyan/work? (y/n): '
+        # query for mounts to work
+        answer = self.get_yn('>>> Mount storage to /home/jovyan/work? (y/n): ')
+        while answer == 'y':
+            local_path = self.get_valid_local_path('>>> Enter local path: ')
+            container_path = self.get_valid_container_path('>>> Enter bucket path: ','/home/jovyan/work')
+            permissions = 'rw'
+            mounts.append([local_path,container_path,permissions])
+            answer = self.get_yn('>>> Mount additional storage to /home/jovyan/work? (y/n): ')
 
-        # query for more mounts
-        msg = '>>> Mount storage to /home/jovyan/mount? (y/n): '
-        while True:
-            answer = self.get_yn(msg)
-            if answer == 'n':
-                break
-            else:
-                msg = '>>> Enter local path: '
-                local_path = self.get_valid_path(msg)
-                msg = '>>> Enter bucket path: '
-                container_path = self.get_valid_path(msg,base='/home/jovyan/mount')
-                valid_inputs = ['r','rw']
-                msg = '>>> Enter permissions (r/rw): '
-                permissions = self.get_valid_input(msg,valid_inputs)
-                mounts.append([local_path,container_path,permissions])
-                msg = '>>> Mount additional storage to /home/jovyan/mount? (y/n): '
+        # query for mounts to mount
+        answer = self.get_yn('>>> Mount storage to /home/jovyan/mount? (y/n): ')
+        while answer == 'y':
+            local_path = self.get_valid_local_path('>>> Enter local path: ')
+            container_path = self.get_valid_container_path('>>> Enter bucket path: ','/home/jovyan/mount')
+            permissions = self.get_permissions('>>> Enter permissions (r/rw): ')
+            mounts.append([local_path,container_path,permissions])
+            answer = self.get_yn('>>> Mount additional storage to /home/jovyan/mount? (y/n): ')
 
         # should we start jupyterlab when done creating bucket?
         msg = '>>> Start bucket and jupyterlab? (y/n): '
@@ -312,6 +298,8 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         num_inputs = len(inputs)
         return inputs,num_inputs
 
+    # The following functions are highly specialized
+
     def get_yn(self,msg):
         valid_inputs = ['y', 'n']
         while True:
@@ -322,6 +310,7 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
                 print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
 
     def get_valid_name(self,msg):
+        print('Valid names may not contain spaces and must start with a letter and be less than 20 characters long.')
         while True:
             name = input(msg)
 
@@ -332,43 +321,25 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
             elif len(name) > 20:
                 print("Bucket names must be less than 20 characters.")
             elif not name[0].isalpha():
-                print("Bucket names must start with alphabetic characters.")
+                print("Bucket names must start with an alphabetic character.")
             else:
                 # check if bucket with that name already exists
+                # Is the only reason create_bucket fails if the name is already take?  May need a more rigerous check
                 status = self.program.create_bucket(name)
-                if not status:
-                    print("Cannot use the same name as an existing bucket!")
-                else:
+                if status:
                     return name
-
-    def get_valid_input(self,msg,valid_inputs):
-        if len(valid_inputs) == 1:
-            valid_msg = valid_inputs[0]
-        elif len(valid_inputs) == 2:
-            valid_msg = " or ".join(valid_inputs)
-        else:
-            valid_msg = ", ".join(valid_inputs[:-1])
-            valid_msg += ", or %s" % valid_inputs[-1]
-        while True:
-            answer = input(msg)
-            if not valid_inputs:
-                return answer
-            if answer in valid_inputs:
-                return answer
-            else:
-                print("Invalid input. Valid inputs are: %s" % valid_msg)
-
-    def get_valid_path(self,msg,base=None):
-        while True:
-            answer = input(msg)
-            path = pathlib.PurePosixPath(answer)
-            if not base is None:
-                if base in [str(x) for x in list(path.parents)]:
-                    return str(path)
                 else:
-                    print("Invalid path. Must start with: %s" % base)
-                    continue
-            return str(path)
+                    print("Cannot use the same name as an existing bucket!")
+
+    def get_valid_version(self,msg,valid_versions):
+        print('Available versions: {}'.format(", ".join(valid_versions)))
+        while True:
+            version = input(msg)
+            if version in valid_versions:
+                return version
+            else:
+                print("Invalid version. Available versions: {}".format(", ".join(valid_versions)))
+
 
     def get_port(self):
         # this is not atomic, so it is possible that another process might snatch up the port
@@ -381,6 +352,36 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
                 return port
             else:
                 port += 1
+
+    def get_valid_local_path(self,msg):
+        while True:
+            path = input(msg)
+            path = pathlib.PurePosixPath(path)
+            if os.path.isdir(path):
+                return str(path)
+            else:
+                print('Cannot find local path entered.')
+
+    def get_valid_container_path(self,msg,base):
+        while True:
+            path = input(msg)
+            path = pathlib.PurePosixPath(path)
+            if base in [str(x) for x in list(path.parents)]:
+                return str(path)
+            else:
+                print("Invalid path. Must start with: {}".format(base))
+
+    def get_permissions(self,msg):
+        valid_inputs = ['r', 'rw']
+        while True:
+            answer = input(msg)
+            if answer in valid_inputs:
+                return answer
+            else:
+                print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
+
+
+
 
 
 def main():
