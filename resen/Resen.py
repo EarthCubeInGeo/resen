@@ -749,10 +749,11 @@ class DockerHelper():
             print("\nConfiguring user space. This might take some time...")
             cmd = "/usr/local/bin/start.sh"
             environment = ["NB_UID=%s"%nb_uid, "NB_GID=%s"%nb_gid]
-            # change UID, GID, useful for linux systems
-            status = self.execute_command(container_id,cmd,detach=False,
-                    environment=environment)
-            if status:
+            # change UID, GID, useful for docker in some linux systems
+            result = container.exec_run(cmd,environment=environment,
+                    detach=False,user="root")
+            # with detach=False this code will wait here until done.
+            if not result.exit_code:
                 print("done.")
                 return True
             else:
@@ -761,12 +762,12 @@ class DockerHelper():
             return False
 
 
-    def execute_command(self,container_id,command,detach=True,environment=None):
+    def execute_command(self,container_id,command,detach=True):
         container = self.get_container(container_id)
         if container is None:
             return False
 
-        result = container.exec_run(command,detach=detach,environment=environment)
+        result = container.exec_run(command,detach=detach)
         return result.exit_code, result.output
 
 
