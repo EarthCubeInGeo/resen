@@ -74,4 +74,4 @@ in the "Docker Quickstart Terminal".
 
 Now you can run Resen! To do this, open an "Anaconda Powershell Prompt" and type "resen" and hit enter! You should see something similar to:
 
-``TODO: insert screenshot``
+.. image:: images/resen_cmd.png
