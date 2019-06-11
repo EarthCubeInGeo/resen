@@ -9,10 +9,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   readme
-   installation
-   installation/index
-   usage
+   installation_windows
 
 
 
