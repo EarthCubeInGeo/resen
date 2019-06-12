@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Resen'
-copyright = '2019, A. Reimer'
-author = 'A. Reimer'
+copyright = '2019, Integrated Geoscience Observatory'
+author = 'Resen Team'
 
 # The full version, including alpha/beta/rc tags
 release = 'v2019.1.0rc1'
