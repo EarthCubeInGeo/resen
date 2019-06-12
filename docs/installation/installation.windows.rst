@@ -1,5 +1,5 @@
-Installing on Windows
-*********************
+Windows Gotchas
+***************
 
 Resen requires both python 3 and docker to function. Here we provide a basic guide for installing both python 3 and docker. We have tested this procedure and know it works. Python 3 and Resen are easy to install. Docker is also fairly easy, but there are some subtle details that need to be emphasized for a smooth installation process.
 
