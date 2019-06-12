@@ -3,7 +3,7 @@
 #
 #  Title: resen
 #
-#  Author: asreimer
+#  Author: resen developer team
 #  Description: The resen tool for working with resen-core locally
 #               which allows for listing available core docker
 #               images, creating resen buckets, starting buckets,
@@ -53,17 +53,23 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
         container_port = local_port
 
         # Mounting persistent storage
-        print('Local directories can be mounted to either /home/jovyan/work/ or /home/jovyan/mount/ in a bucket.  You will have rw privileges to everything mounted in work, but can specified permissions as either r or rw for directories in mount.  Code and data created in a bucket can ONLY be accessed outside the bucket or after the bucket has been deleted if it is saved in a mounted local directory.')
+        msg =  'Local directories can be mounted to either /home/jovyan/work or '
+        msg += '/home/jovyan/mount/ in a bucket. The /home/jovyan/work location is '
+        msg += 'a workspace and /home/jovyan/mount/ is intended for mounting in data. '
+        msg += 'You will have rw privileges to everything mounted in work, but can '
+        msg += 'specified permissions as either r or rw for directories in mount. Code '
+        msg += 'and data created in a bucket can ONLY be accessed outside the bucket or '
+        msg += 'after the bucket has been deleted if it is saved in a mounted local directory.'
+        print(msg)
         mounts = list()
 
-        # query for mounts to work
+        # query for mount to work
         answer = self.get_yn('>>> Mount storage to /home/jovyan/work? (y/n): ')
-        while answer == 'y':
+        if answer == 'y':
             local_path = self.get_valid_local_path('>>> Enter local path: ')
-            container_path = self.get_valid_container_path('>>> Enter bucket path: ','/home/jovyan/work')
+            container_path = '/home/jovyan/work'
             permissions = 'rw'
             mounts.append([local_path,container_path,permissions])
-            answer = self.get_yn('>>> Mount additional storage to /home/jovyan/work? (y/n): ')
 
         # query for mounts to mount
         answer = self.get_yn('>>> Mount storage to /home/jovyan/mount? (y/n): ')
