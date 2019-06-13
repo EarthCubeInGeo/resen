@@ -389,7 +389,7 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
         while True:
             path = input(msg)
             path = pathlib.PurePosixPath(path)
-            if os.path.isdir(path):
+            if os.path.isdir(str(path)):
                 return str(path)
             else:
                 print('Cannot find local path entered.')
