@@ -188,6 +188,10 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         # get bucket name from input
         bucket_name = inputs[0]
 
+        if not bucket_name in self.program.bucket_manager.bucket_names:
+            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
+            return False
+
         # get bucket infomrmation (ports and status)
         # This stuff may be better suited to exist in some kind of "status query" inside of Resen.py
         ind = self.program.bucket_manager.bucket_names.index(bucket_name)
