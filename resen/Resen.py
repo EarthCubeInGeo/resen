@@ -529,7 +529,7 @@ class BucketManager():
 
         if bucket['docker']['status'] in ['running']:
             # then we can start the container and update status
-            result = self.dockerhelper.execute_command(bucket['docker']['container'],command)
+            result = self.dockerhelper.execute_command(bucket['docker']['container'],command,detach=detach)
             status, output = result
             if (detach and status is None) or (not detach and status==0):
                 return True
@@ -598,8 +598,9 @@ class BucketManager():
         if pid is None:
             return True
 
-        command = "kill -9 %s" % (pid)
-        status = self.execute_command(bucket_name,command,detach=True)
+        port = bucket['docker']['jupyter']['port']
+        command = "bash -cl 'source activate py36 && jupyter notebook stop %s'" % (port)
+        status = self.execute_command(bucket_name,command,detach=False)
         time.sleep(0.1)
         self.update_bucket_statuses()
 
