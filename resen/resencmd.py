@@ -113,27 +113,27 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
             print("Failed to create bucket!")
             status = self.program.remove_bucket(bucket_name)
 
-    def do_start_bucket(self,args):
-        """Usage:
-start_bucket bucket_name : Start bucket named bucket_name."""
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 1:
-            print("Syntax Error. Usage: start_bucket bucket_name")
-            return
+#     def do_start_bucket(self,args):
+#         """Usage:
+# start_bucket bucket_name : Start bucket named bucket_name."""
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 1:
+#             print("Syntax Error. Usage: start_bucket bucket_name")
+#             return
 
-        bucket_name = inputs[0]
-        status = self.program.start_bucket(bucket_name)
+#         bucket_name = inputs[0]
+#         status = self.program.start_bucket(bucket_name)
 
-    def do_stop_bucket(self,args):
-        """Usage:
-stop_bucket bucket_name : Stop bucket named bucket_name."""
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 1:
-            print("Syntax Error. Usage: stop_bucket bucket_name")
-            return
+#     def do_stop_bucket(self,args):
+#         """Usage:
+# stop_bucket bucket_name : Stop bucket named bucket_name."""
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 1:
+#             print("Syntax Error. Usage: stop_bucket bucket_name")
+#             return
 
-        bucket_name = inputs[0]
-        status = self.program.stop_bucket(bucket_name)
+#         bucket_name = inputs[0]
+#         status = self.program.stop_bucket(bucket_name)
 
     def do_remove_bucket(self,args):
         """Usage:
