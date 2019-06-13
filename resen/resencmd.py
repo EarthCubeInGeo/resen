@@ -174,7 +174,7 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
 
     def do_start_jupyter(self,args):
         """Usage:
->>> start_jupyter bucket_name
+>>> start_jupyter bucket_name : Start jupyter on bucket bucket_name
         """
         inputs,num_inputs = self.parse_args(args)
 
