@@ -591,8 +591,10 @@ class BucketManager():
 
         ind = self.bucket_names.index(bucket_name)
         bucket = self.buckets[ind]
-        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        if not bucket['docker']['status'] in ['running']:
+            return True
 
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
         if pid is None:
             return True
 
