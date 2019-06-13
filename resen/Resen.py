@@ -76,8 +76,8 @@ class Resen():
     def stop_bucket(self,bucket_name):
         return self.bucket_manager.stop_bucket(bucket_name)
 
-    def start_jupyter(self,bucket_name,local,container,lab=True):
-        return self.bucket_manager.start_jupyter(bucket_name,local,container,lab=lab)
+    def start_jupyter(self,bucket_name,local,container):
+        return self.bucket_manager.start_jupyter(bucket_name,local,container)
 
     def _get_config_dir(self):
         appname = 'resen'
@@ -535,20 +535,15 @@ class BucketManager():
             print('ERROR: Bucket %s is not running!' % (bucket['bucket']['name']))
             return False
 
-    def start_jupyter(self,bucket_name,local_port,container_port,lab=True):
+    def start_jupyter(self,bucket_name,local_port,container_port):
         if not bucket_name in self.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
             return False
-
-        if lab:
-            style = 'lab'
-        else:
-            style = 'notebook'
         
         token = '%048x' % random.randrange(16**48)
 
-        command = "bash -cl 'source activate py36 && jupyter %s --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
-        command = command % (style, container_port, token)
+        command = "bash -cl 'source activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
+        command = command % (container_port, token)
 
         status = self.execute_command(bucket_name,command,detach=True)
         if status == False:

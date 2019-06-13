@@ -108,7 +108,7 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
                     return
                 # start jupyterlab
                 print("...starting jupyterlab...")
-                status = self.program.start_jupyter(bucket_name,local_port,container_port,lab=True)
+                status = self.program.start_jupyter(bucket_name,local_port,container_port)
         else:
             print("Failed to create bucket!")
             status = self.program.remove_bucket(bucket_name)
@@ -187,7 +187,6 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
 
         # get bucket name from input
         bucket_name = inputs[0]
-        lab = True
 
         # get bucket infomrmation (ports and status)
         # This stuff may be better suited to exist in some kind of "status query" inside of Resen.py
@@ -206,7 +205,7 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         # check if jupyter server running
 
         # then start jupyter 
-        status = self.program.start_jupyter(bucket_name,ports[0],ports[1],lab=lab)
+        status = self.program.start_jupyter(bucket_name,ports[0],ports[1])
 
 
 
