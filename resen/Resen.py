@@ -79,6 +79,9 @@ class Resen():
     def start_jupyter(self,bucket_name,local,container):
         return self.bucket_manager.start_jupyter(bucket_name,local,container)
 
+    def stop_jupyter(self,bucket_name):
+        return self.bucket_manager.stop_jupyter(bucket_name)
+
     def _get_config_dir(self):
         appname = 'resen'
 
@@ -187,6 +190,9 @@ class BucketManager():
         params['docker']['port'] = list()
         params['docker']['storage'] = list()
         params['docker']['status'] = None
+        params['docker']['jupyter'] = dict()
+        params['docker']['jupyter']['token'] = None
+        params['docker']['jupyter']['port'] = None
 
         # now add the new bucket to the self.buckets config and then update the config file
         self.buckets.append(params)
@@ -539,9 +545,20 @@ class BucketManager():
         if not bucket_name in self.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
             return False
-        
-        token = '%048x' % random.randrange(16**48)
 
+        ind = self.bucket_names.index(bucket_name)
+        bucket = self.buckets[ind]
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
+
+        if not pid is None:
+            port = bucket['docker']['jupyter']['port']
+            token = bucket['docker']['jupyter']['token']
+            url = 'http://localhost:%s/?token=%s' % (port,token)
+            print("Jupyter lab is already running and can be accessed in a browser at: %s" % (url))
+            return True
+
+
+        token = '%048x' % random.randrange(16**48)
         command = "bash -cl 'source activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
         command = command % (container_port, token)
 
@@ -549,29 +566,69 @@ class BucketManager():
         if status == False:
             return False
         time.sleep(0.1)
+
         # now check that jupyter is running
         self.update_bucket_statuses()
-        ind = self.bucket_names.index(bucket_name)
-        bucket = self.buckets[ind]
-        result = self.dockerhelper.execute_command(bucket['docker']['container'],'ps -ef',detach=False)
-        output = result[1].decode('utf-8').split('\n')
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
 
-        pid = None
-        for line in output:
-            if 'jupyter' in line and token in line:
-                parsed_line = [x for x in line.split(' ') if x != '']
-                pid = parsed_line[1]
-                break
-            
         if pid is not None:
+            self.buckets[ind]['docker']['jupyter']['token'] = token
+            self.buckets[ind]['docker']['jupyter']['port'] = local_port
+            self.save_config()
             url = 'http://localhost:%s/?token=%s' % (local_port,token)
-            print("Jupyter %s can be accessed in a browser at: %s" % (style, url))
+            print("Jupyter lab can be accessed in a browser at: %s" % (url))
             time.sleep(3)
             webbrowser.open(url)
             return True
         else:
             print("ERROR: Failed to start jupyter server!")
             return False
+
+    def stop_jupyter(self,bucket_name):
+        if not bucket_name in self.bucket_names:
+            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
+            return False
+
+        ind = self.bucket_names.index(bucket_name)
+        bucket = self.buckets[ind]
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
+
+        if pid is None:
+            return True
+
+        command = "kill -9 %s" % (pid)
+        status = self.execute_command(bucket_name,command,detach=True)
+        time.sleep(0.1)
+        self.update_bucket_statuses()
+
+        # now verify it is dead
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        if not pid is None:
+            print("ERROR: Failed to stop jupyter lab.")
+            return False
+
+        self.buckets[ind]['docker']['jupyter']['token'] = None
+        self.buckets[ind]['docker']['jupyter']['port'] = None
+        self.save_config()
+
+        return True
+
+    def get_jupyter_pid(self,container):
+
+        result = self.dockerhelper.execute_command(container,'ps -ef',detach=False)
+        if result == False:
+            return None
+
+        output = result[1].decode('utf-8').split('\n')
+
+        pid = None
+        for line in output:
+            if ('jupyter-lab' in line or 'jupyter lab' in line) and '--no-browser --ip 0.0.0.0' in line:
+                parsed_line = [x for x in line.split(' ') if x != '']
+                pid = parsed_line[1]
+                break
+
+        return pid
 
     def update_bucket_statuses(self):
         for i,bucket in enumerate(self.buckets):

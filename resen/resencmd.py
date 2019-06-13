@@ -208,7 +208,17 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         status = self.program.start_jupyter(bucket_name,ports[0],ports[1])
 
 
+    def do_stop_jupyter(self,args):
+        """Usage:
+stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
+        inputs,num_inputs = self.parse_args(args)
+        if num_inputs != 1:
+            print("Syntax Error. Usage: stop_bucket bucket_name")
+            return
 
+        bucket_name = inputs[0]
+        status = self.program.stop_jupyter(bucket_name)
+        status = self.program.stop_bucket(bucket_name)
 
 
 #     def do_add_storage(self,args):
