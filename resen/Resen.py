@@ -599,9 +599,12 @@ class BucketManager():
             return True
 
         port = bucket['docker']['jupyter']['port']
-        command = "bash -cl 'source activate py36 && jupyter notebook stop %s'" % (port)
+        python_cmd = 'from notebook.notebookapp import shutdown_server, list_running_servers; '
+        python_cmd += 'svrs = [x for x in list_running_servers() if x[\\\"port\\\"] == %s]; ' % (port)
+        python_cmd += 'sts = True if len(svrs) == 0 else shutdown_server(svrs[0]); print(sts)'
+        command = "bash -cl '/home/jovyan/envs/py36/bin/python -c \"%s \"'" % (python_cmd)
         status = self.execute_command(bucket_name,command,detach=False)
-        time.sleep(0.1)
+
         self.update_bucket_statuses()
 
         # now verify it is dead
