@@ -145,8 +145,8 @@ class BucketManager():
         # TODO: download json file from resen-core github repo
         #       and if that fails, fallback to hardcoded list
         return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
-                 "image_id":'sha256:3ba43e401c1b1a8eca8969aec8426a22d99bca349fd837270fa06dbcaefaeb47',
-                 "repodigest":'sha256:c3783e3b7f05ec17f9381a01009b794666107780d964e8087c62f7baaa00049d'},]
+                 "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
+                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},]
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
