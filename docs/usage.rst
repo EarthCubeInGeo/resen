@@ -12,7 +12,7 @@ This will open the resen tool::
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
     
-    Resen 2019.1.0rc1 -- Reproducible Software Environment
+    Resen 2019.1.0rc2 -- Reproducible Software Environment
     
     [resen] >>> 
 
@@ -22,97 +22,117 @@ Type ``help`` to see available commands::
 
 This will produce a list of resen commands you will use to manage your resen buckets::
 
-	Documented commands (type help <topic>):
-	========================================
-	EOF        add_storage    help           remove_port     start_jupyter
-	add_image  create_bucket  quit           remove_storage  status       
-	add_port   exit           remove_bucket  start_bucket    stop_bucket  
+    Documented commands (type help <topic>):
+    ========================================
+    EOF            exit  quit           start_jupyter  stop_jupyter
+    create_bucket  help  remove_bucket  status
 
 To get more information about a specific command, enter ``help <command>``.
 
 Resen Workflow
 ==============
 
-Use Resen to start, stop, and manage resen buckets.  Buckets are portable, system independent environments where code can be developed and run.  Buckets can be shared between systems and the code in it will run exactly the same way.  Resen buckets come preinstalled with a variety of common geospace software that can be used immediately in analysis.
+Use Resen to create and remove buckets. Buckets are portable, system independent environments where code can be developed and run. Buckets can be shared between Windows, Linux, and macos systems and all analysis within the bucket will be run exactly the same. Resen buckets come preinstalled with a variety of common geospace software that can be used immediately in analysis.
 
 Setup a New Bucket
 ------------------
 
-1. Create a new bucket.  Buckets should be given a name that a string of less than 20 characters with no spaces.  To create a bucket named ``amber``::
+1. Creating a new bucket is performed with the command::
 
-	[resen] >>> create_bucket amber
+     [resen] >>> create_bucket
 
-2. Add a resen image to the bucket.  The image name must be a valid resen-core tag that is available on Docker Hub.  For a list of tags, see https://hub.docker.com/r/earthcubeingeo/resen-core/tags.  To add the ``2019.1.0rc1`` image to ``amber``::
+   The ``create_bucket`` command queries the user for several pieces of information required to create a bucket. First it asks for the bucket name. Creating a bucket named ``amber``::
 
-	[resen] >>> add_image amber 2019.1.0rc1
+     Please enter a name for your bucket.
+     Valid names may not contain spaces and must start with a letter and be less than 20 characters long.``
+     >>> Enter bucket name: amber
 
-3. Add a port for the bucket.  This is required for the bucket to run jupyter notebooks.  A port on the bucket will map to a port on the local machine.  Map the local port 8000 to the bucket port 8080::
+   Next, the user is asked to specify the version of resen-core to use::
 
-	[resen] >>> add_port amber 8000 8080
+     Please choose a version of resen-core.
+     Available versions: 2019.1.0rc2
+     >>> Select a version: 2019.1.0.rc2
 
-4. Add a persistent storage directory to the bucket.  This lets the bucket access code and data on the local machine.  Files created in a Resen bucket will be available outside of the bucket or after the bucket has been deleted ONLY if they are saved in a persistent storage directory.  Multiple storage directories can be added to the bucket.  Each persistent storage directory can have either read (`r`) or read/write (`rw`) permissions, specifying whether or not resen can write to the local directory.  Add the local directories ``/home/usr/code/fossil`` and ``/home/usr/data`` to the bucket in the ``/home/jovyan/work`` directory::
+   Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/work``::
 
-	[resen] >>> add_storage amber /home/usr/code/fossil /home/jovyan/work/fossil rw
-	[resen] >>> add_storage amber /home/usr/data /home/jovyan/work/data r
+     Local directories can be mounted to either /home/jovyan/work or /home/jovyan/mount/ in
+     a bucket. The /home/jovyan/work location is a workspace and /home/jovyan/mount/ is intended
+     for mounting in data. You will have rw privileges to everything mounted in work, but can
+     specify permissions as either r or rw for directories in mount. Code and data created in a
+     bucket can ONLY be accessed outside the bucket or after the bucket has been deleted if it is
+     saved in a mounted local directory.
+     >>> Mount storage to /home/jovyan/work? (y/n): y
+     >>> Enter local path: /some/local/path
 
-5. Check the status of the bucket::
+   Followed by additional local directories that can be mounted under ``/home/jovyan/mount``::
 
-	[resen] >>> status amber
-	{'bucket': {'name': 'amber'}, 'docker': {'image': 'docker.io/earthcubeingeo/resen-core:2019.1.0rc1', 'container': None, 'port': [[8000, 8080, True]], 'storage': [['/home/usr/code/fossil', '/home/jovyan/work/fossil', 'rw'], ['/home/usr/data', '/home/jovyan/work/data', 'ro']], 'status': None}}
+     >>> Mount storage to /home/jovyan/mount? (y/n): y
+     >>> Enter local path: /some/other/local/path
+     >>> Enter bucket path: /home/jovyan/mount/data001
+     >>> Enter permissions (r/rw): r
+     >>> Mount additional storage to /home/jovyan/mount? (y/n): n
 
-At this point, the bucket should have a name, an image, at least one port, and at least one storage location.  Status should be ``None``.
+   Finally, the user is asked if they want jupyterlab to be started::
 
-Work in a Bucket
-----------------
+     >>> Start bucket and jupyterlab? (y/n): y
+
+   after which resen will begin creating the bucket. Example output for a new bucket named ``amber`` with jupyterlab started is::
+
+     ...adding core...
+     ...adding mounts...
+     Bucket created successfully!
+     ...starting jupyterlab...
+     Jupyter lab can be accessed in a browser at: http://localhost:9000/?token=61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a
+
+2. Check the status of the bucket::
+
+    [resen] >>> status amber
+    {'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc2', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:3ba43e401c1b1a8eca8969aec8426a22d99bca349fd837270fa06dbcaefaeb47', 'pull_image': 'earthcubeingeo/resen-core@sha256:c3783e3b7f05ec17f9381a01009b794666107780d964e8087c62f7baaa00049d'}}
+
+At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage location.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
+
+Work with a Bucket
+------------------
 1. Check what buckets are available with ``status``::
 
-	[resen] >>> status
-	Bucket Name         Docker Image             Status                   
-	amber               docker.io/earthcubei...  None   
+    [resen] >>> status
+    Bucket Name         Docker Image             Status
+    amber               2019.1.0rc2              running
 
-Newly created buckets that have not been started will have Status ``None``.
+   If a bucket is running, it will consume system resources accordingly.
 
-2. Start a newly created bucket or restart a bucket that has been exited::
+2. Stop jupyter lab from a bucket::
 
-	[resen] >>> start_bucket amber
-	Pulling image: docker.io/earthcubeingeo/resen-core:2019.1.0rc1
-	    This may take some time...
-	Done!
+    [resen] >>> stop_jupyter amber
 
-The status of ``amber`` should now be ``running``::
+   The status of ``amber`` should now be ``exited``::
 
-	[resen] >>> status
-	Bucket Name         Docker Image             Status                   
-	amber               docker.io/earthcubei...  running                  
+    [resen] >>> status
+    Bucket Name         Docker Image             Status
+    amber               2019.1.0rc2              exited
 
-3. Use the bucket to start a jupyter server.  Make sure to include the local port and the bucket port that forwards to it.  Start a jupyter server in ``amber``::
+   The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
 
-	[resen] >>> start_jupyter amber 8000 8080
+3. Start a jupyter lab in bucket ``amber`` that has been stopped::
 
-The jupyter server starts in the ``/home/jovyan/work`` directory, which should include the persistent storage directories ``fossil`` and ``data``. Alternatively you can start directly a jupyter lab adding ``--lab`` to the previous command::
+    [resen] >>> start_jupyter amber
 
-	[resen] >>> start_jupyter amber 8000 8080 --lab
-	
-or, if you already started the notebook without ``--lab`` you can change the url in your browser from ``http://localhost:8000/tree`` to ``http://localhost:8000/lab``. One can go back from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
+   The status of ``amber`` should now be ``running``::
 
-4. Stop the jupyter server by clicking the "Quit" button on the home page of the notebook. The jupyter lab "Quit" button has not been configured in this version.
+    [resen] >>> status
+    Bucket Name         Docker Image             Status
+    amber               2019.1.0rc2              running
 
-5. Stop the bucket::
 
-	[resen] >>> stop_bucket amber
+   The jupyter lab server starts in the ``/home/jovyan`` directory, which should include the persistent storage directories ``work`` and ``mount``.
+   The user can alternate between the jupyter lab and the classic notebook view by changing the url in the browser from ``http://localhost:8000/lab`` to ``http://localhost:8000/tree``. Alternatively one can switch from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
 
-The status of ``amber`` should now be ``exited``::
-
-	[resen] >>> status
-	Bucket Name         Docker Image             Status                   
-	amber               docker.io/earthcubei...  exited                   
-
-The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
 
 Remove a Bucket
 ---------------
-Delete a bucket::
+The user can delete a bucket with the following command::
 
-	remove_bucket amber
+    [resen] >>> remove_bucket amber
 
-WARNING: This will permanently delete the bucket.  Any work that is not saved in a persistent storage directory will be lost.
+A bucket that is running needs to be stopped before removed.
+WARNING: This will permanently delete the bucket. Any work that was not saved in a mounted storage directory will be lost.

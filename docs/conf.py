@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Resen'
-copyright = '2019, A. Reimer'
-author = 'A. Reimer'
+copyright = '2019, Integrated Geoscience Observatory'
+author = 'Resen Team'
 
 # The full version, including alpha/beta/rc tags
-release = 'v2019.1.0rc1'
+release = 'v2019.1.0rc2'
 
 master_doc = 'index'
 
@@ -36,6 +36,9 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.napoleon',
 ]
+
+
+default_role = "autolink"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
