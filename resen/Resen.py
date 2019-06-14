@@ -76,8 +76,11 @@ class Resen():
     def stop_bucket(self,bucket_name):
         return self.bucket_manager.stop_bucket(bucket_name)
 
-    def start_jupyter(self,bucket_name,local,container,lab=True):
-        return self.bucket_manager.start_jupyter(bucket_name,local,container,lab=lab)
+    def start_jupyter(self,bucket_name,local,container):
+        return self.bucket_manager.start_jupyter(bucket_name,local,container)
+
+    def stop_jupyter(self,bucket_name):
+        return self.bucket_manager.stop_jupyter(bucket_name)
 
     def _get_config_dir(self):
         appname = 'resen'
@@ -141,7 +144,9 @@ class BucketManager():
     def __get_valid_cores(self):
         # TODO: download json file from resen-core github repo
         #       and if that fails, fallback to hardcoded list
-        return [{"version":"2019.1.0rc1","repo":"resen-core","org":"earthcubeingeo",},]
+        return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
+                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},]
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
@@ -185,6 +190,9 @@ class BucketManager():
         params['docker']['port'] = list()
         params['docker']['storage'] = list()
         params['docker']['status'] = None
+        params['docker']['jupyter'] = dict()
+        params['docker']['jupyter']['token'] = None
+        params['docker']['jupyter']['port'] = None
 
         # now add the new bucket to the self.buckets config and then update the config file
         self.buckets.append(params)
@@ -306,7 +314,7 @@ class BucketManager():
         child = Path(container)
         for loc in self.storage_whitelist:
             p = Path(loc)
-            if p in child.parents:
+            if p == child or p in child.parents:
                 valid = True
         if not valid:
             print("ERROR: Invalid mount location. Can only mount storage into: %s." % ', '.join(self.storage_whitelist))
@@ -418,10 +426,14 @@ class BucketManager():
         
         for x in self.valid_cores:
             if docker_image == x['version']:
-                image = 'docker.io/%s/%s:%s' % (x['org'],x['repo'],x['version'])
+                image = x['version']
+                image_id = x['image_id']
+                pull_image = '%s/%s@%s' % (x['org'],x['repo'],x['repodigest'])
                 break
 
         self.buckets[ind]['docker']['image'] = image
+        self.buckets[ind]['docker']['image_id'] = image_id
+        self.buckets[ind]['docker']['pull_image'] = pull_image
         self.save_config()
         
         return True
@@ -438,6 +450,12 @@ class BucketManager():
 
         ind = self.bucket_names.index(bucket_name)
         bucket = self.buckets[ind]
+        
+        # Make sure we have an image assigned to the bucket
+        existing_image = bucket['docker']['image']
+        if existing_image is None:
+            print("ERROR: Bucket does not have an image assigned to it.")
+            return False
 
         if bucket['docker']['container'] is None:
             # no container yet created, so create one
@@ -446,7 +464,13 @@ class BucketManager():
             kwargs['storage'] = bucket['docker']['storage']
             kwargs['bucket_name'] = bucket['bucket']['name']
             kwargs['image_name'] = bucket['docker']['image']
+            kwargs['image_id'] = bucket['docker']['image_id']
+            kwargs['pull_image'] = bucket['docker']['pull_image']
             container_id = self.dockerhelper.create_container(**kwargs)
+
+            if container_id is None:
+                print("ERROR: Failed to create container")
+                return False
 
             self.buckets[ind]['docker']['container'] = container_id
             self.save_config()
@@ -505,7 +529,7 @@ class BucketManager():
 
         if bucket['docker']['status'] in ['running']:
             # then we can start the container and update status
-            result = self.dockerhelper.execute_command(bucket['docker']['container'],command)
+            result = self.dockerhelper.execute_command(bucket['docker']['container'],command,detach=detach)
             status, output = result
             if (detach and status is None) or (not detach and status==0):
                 return True
@@ -517,48 +541,100 @@ class BucketManager():
             print('ERROR: Bucket %s is not running!' % (bucket['bucket']['name']))
             return False
 
-    def start_jupyter(self,bucket_name,local_port,container_port,lab=True):
+    def start_jupyter(self,bucket_name,local_port,container_port):
         if not bucket_name in self.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
             return False
 
-        if lab:
-            style = 'lab'
-        else:
-            style = 'notebook'
-        
-        token = '%048x' % random.randrange(16**48)
+        ind = self.bucket_names.index(bucket_name)
+        bucket = self.buckets[ind]
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
 
-        command = "bash -cl 'source activate py36 && jupyter %s --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
-        command = command % (style, container_port, token)
+        if not pid is None:
+            port = bucket['docker']['jupyter']['port']
+            token = bucket['docker']['jupyter']['token']
+            url = 'http://localhost:%s/?token=%s' % (port,token)
+            print("Jupyter lab is already running and can be accessed in a browser at: %s" % (url))
+            return True
+
+
+        token = '%048x' % random.randrange(16**48)
+        command = "bash -cl 'source activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
+        command = command % (container_port, token)
 
         status = self.execute_command(bucket_name,command,detach=True)
         if status == False:
             return False
         time.sleep(0.1)
+
         # now check that jupyter is running
         self.update_bucket_statuses()
-        ind = self.bucket_names.index(bucket_name)
-        bucket = self.buckets[ind]
-        result = self.dockerhelper.execute_command(bucket['docker']['container'],'ps -ef',detach=False)
-        output = result[1].decode('utf-8').split('\n')
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
 
-        pid = None
-        for line in output:
-            if 'jupyter' in line and token in line:
-                parsed_line = [x for x in line.split(' ') if x != '']
-                pid = parsed_line[1]
-                break
-            
         if pid is not None:
+            self.buckets[ind]['docker']['jupyter']['token'] = token
+            self.buckets[ind]['docker']['jupyter']['port'] = local_port
+            self.save_config()
             url = 'http://localhost:%s/?token=%s' % (local_port,token)
-            print("Jupyter %s can be accessed in a browser at: %s" % (style, url))
+            print("Jupyter lab can be accessed in a browser at: %s" % (url))
             time.sleep(3)
             webbrowser.open(url)
             return True
         else:
             print("ERROR: Failed to start jupyter server!")
             return False
+
+    def stop_jupyter(self,bucket_name):
+        if not bucket_name in self.bucket_names:
+            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
+            return False
+
+        ind = self.bucket_names.index(bucket_name)
+        bucket = self.buckets[ind]
+        if not bucket['docker']['status'] in ['running']:
+            return True
+
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        if pid is None:
+            return True
+
+        port = bucket['docker']['jupyter']['port']
+        python_cmd = 'from notebook.notebookapp import shutdown_server, list_running_servers; '
+        python_cmd += 'svrs = [x for x in list_running_servers() if x[\\\"port\\\"] == %s]; ' % (port)
+        python_cmd += 'sts = True if len(svrs) == 0 else shutdown_server(svrs[0]); print(sts)'
+        command = "bash -cl '/home/jovyan/envs/py36/bin/python -c \"%s \"'" % (python_cmd)
+        status = self.execute_command(bucket_name,command,detach=False)
+
+        self.update_bucket_statuses()
+
+        # now verify it is dead
+        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        if not pid is None:
+            print("ERROR: Failed to stop jupyter lab.")
+            return False
+
+        self.buckets[ind]['docker']['jupyter']['token'] = None
+        self.buckets[ind]['docker']['jupyter']['port'] = None
+        self.save_config()
+
+        return True
+
+    def get_jupyter_pid(self,container):
+
+        result = self.dockerhelper.execute_command(container,'ps -ef',detach=False)
+        if result == False:
+            return None
+
+        output = result[1].decode('utf-8').split('\n')
+
+        pid = None
+        for line in output:
+            if ('jupyter-lab' in line or 'jupyter lab' in line) and '--no-browser --ip 0.0.0.0' in line:
+                parsed_line = [x for x in line.split(' ') if x != '']
+                pid = parsed_line[1]
+                break
+
+        return pid
 
     def update_bucket_statuses(self):
         for i,bucket in enumerate(self.buckets):
@@ -609,7 +685,7 @@ class DockerHelper():
         # Info like, what internal port needs to be exposed? Where do we get the image from? etc.
         # mounting directory in the container?
         self.container_prefix = 'resen_'
-        
+
         self.docker = docker.from_env()
 
     def create_container(self,**input_kwargs):
@@ -618,6 +694,8 @@ class DockerHelper():
         storage = input_kwargs.get('storage',None)
         bucket_name = input_kwargs.get('bucket_name',None)
         image_name = input_kwargs.get('image_name',None)
+        image_id = input_kwargs.get('image_id',None)
+        pull_image = input_kwargs.get('pull_image',None)
 
 
         # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
@@ -642,18 +720,71 @@ class DockerHelper():
             create_kwargs['volumes'][key] = temp
 
         # check if we have image, if not, pull it
-        reps = [x.attrs['RepoTags'] for x in self.docker.images.list()]
-        if not image_name in reps:
+        local_image_ids = [x.id for x in self.docker.images.list()]
+        if image_id not in local_image_ids:
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
-            repo, tag = image_name.split(':')
-            self.docker.images.pull(repo,tag=tag)
+            status = self.stream_pull_image(pull_image)
+            if not status:
+                print("ERROR: Failed to pull image")
+                return None
+            image = self.docker.images.get(pull_image)
+            repo,digest = pull_image.split('@')
+            # When pulling from repodigest sha256 no tag is assigned. So:
+            image.tag(repo, tag=image_name)
             print("Done!")
 
-        container_id = self.docker.containers.create(image_name,**create_kwargs)
+        container_id = self.docker.containers.create(image_id,**create_kwargs)
 
         return container_id.id
 
+    def stream_pull_image(self,pull_image):
+        import datetime
+        # time formatting
+        def truncate_secs(delta_time, fmt=":%.2d"):
+            delta_str = str(delta_time).split(':')
+            return ":".join(delta_str[:-1]) + fmt%(float(delta_str[-1]))
+        # progress bar
+        def update_bar(sum_total,accumulated,t0,current_time, scale=0.5):
+            percentage = accumulated/sum_total*100
+            nchars = int(percentage*scale)
+            bar = "\r["+nchars*"="+">"+(int(100*scale)-nchars)*" "+"]"
+            time_info = "Elapsed time: %s"%truncate_secs(current_time - t0)
+            print(bar+" %6.2f %%, %5.3f/%4.2fGB %s"%(percentage,
+                accumulated/1024**3,sum_total/1024**3,time_info),end="")
+
+        id_list = []
+        id_current = []
+        id_total = 0
+        t0 = prev_time = datetime.datetime.now()
+        try:
+            # Use a lower level pull call to stream the pull
+            for line in self.docker.api.pull(pull_image,stream=True, decode=True):
+                if 'progress' not in line:
+                    continue
+                line_current = line['progressDetail']['current']
+                if line['id'] not in id_list:
+                    id_list.append(line['id'])
+                    id_current.append(line_current)
+                    id_total += line['progressDetail']['total']
+                else:
+                    id_current[id_list.index(line['id'])] = line_current
+                current_time = datetime.datetime.now()
+                if (current_time-prev_time).total_seconds()<1:
+                    # To limit print statements to no more than 1 per second.
+                    continue
+                prev_time = current_time
+                update_bar(id_total,sum(id_current),t0,current_time)
+            # Last update of the progress bar:
+            update_bar(id_total,sum(id_current),t0,current_time)
+        except Exception as e:
+            print("\nException encountered while pulling image %s" % pull_image)
+            print("Exception: %s" % str(e))
+            return False
+
+        print() # to avoid erasing the progress bar at the end
+
+        return True
 
     def start_container(self, container_id):
         # need to check if bucket config has changed since last run
