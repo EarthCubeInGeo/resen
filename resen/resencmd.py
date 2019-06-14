@@ -3,7 +3,7 @@
 #
 #  Title: resen
 #
-#  Author: asreimer
+#  Author: resen developer team
 #  Description: The resen tool for working with resen-core locally
 #               which allows for listing available core docker
 #               images, creating resen buckets, starting buckets,
@@ -17,6 +17,7 @@ import shlex
 import resen
 import socket
 import pathlib
+import os
 
 version = resen.__version__
 
@@ -34,71 +35,54 @@ class ResenCmd(cmd.Cmd):
     # if 
     def do_create_bucket(self,args):
         """Usage:
-create_bucket bucket_name : Create a new bucket with name bucket_name. Must start with a letter, <=20 characters, and no spaces."""
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 1:
-            print("Syntax Error")
-            return
+create_bucket : Create a new bucket by responding to the prompts provided."""
 
-        bucket_name = inputs[0]
-        # check if bucket_name has spaces in it and is greater than 20 characters
-        # also bucket name must start with a letter
-        if ' ' in bucket_name or len(bucket_name) > 20 or not bucket_name[0].isalpha():
-            print("Syntax Error. Usage: create_bucket bucket_name")
-            return
+        # First, ask user for bucket name
+        print('Please enter a name for your bucket.')
+        bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
         # First, ask user about the bucket they want to create
         # resen-core version?
         valid_versions = sorted([x['version'] for x in self.program.bucket_manager.valid_cores])
-        print('Please choose a version of resen-core. Available versions: %s' % ", ".join(valid_versions))
-        msg = '>>> Select a version: '
-        docker_image = self.get_valid_input(msg,valid_versions)
+        print('Please choose a version of resen-core.')
+        docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
 
 
         # Figure out a port to use
         local_port = self.get_port()
         container_port = local_port
 
-        # Ask user about storage locations to mount
+        # Mounting persistent storage
+        msg =  'Local directories can be mounted to either /home/jovyan/work or '
+        msg += '/home/jovyan/mount/ in a bucket. The /home/jovyan/work location is '
+        msg += 'a workspace and /home/jovyan/mount/ is intended for mounting in data. '
+        msg += 'You will have rw privileges to everything mounted in work, but can '
+        msg += 'specified permissions as either r or rw for directories in mount. Code '
+        msg += 'and data created in a bucket can ONLY be accessed outside the bucket or '
+        msg += 'after the bucket has been deleted if it is saved in a mounted local directory.'
+        print(msg)
         mounts = list()
-        valid_inputs = ['y','n']
-        msg = '>>> Mount storage to /home/jovyan/work? (y/n): '
-        answer = self.get_valid_input(msg,valid_inputs)
+
+        # query for mount to work
+        answer = self.get_yn('>>> Mount storage to /home/jovyan/work? (y/n): ')
         if answer == 'y':
-            msg = '>>> Enter local path: '
-            local_path = self.get_valid_path(msg)
+            local_path = self.get_valid_local_path('>>> Enter local path: ')
             container_path = '/home/jovyan/work'
             permissions = 'rw'
             mounts.append([local_path,container_path,permissions])
 
-        # query for more mounts
-        while True:
-            valid_inputs = ['y','n']
-            msg = '>>> Mount additional storage to /home/jovyan/mount? (y/n): '
-            answer = self.get_valid_input(msg,valid_inputs)
-            if answer == 'n':
-                break
-            else:
-                msg = '>>> Enter local path: '
-                local_path = self.get_valid_path(msg)
-                msg = '>>> Enter bucket path: '
-                container_path = self.get_valid_path(msg,base='/home/jovyan/mount')
-                valid_inputs = ['r','rw']
-                msg = '>>> Enter permissions (r/rw): '
-                permissions = self.get_valid_input(msg,valid_inputs)
-                mounts.append([local_path,container_path,permissions])
+        # query for mounts to mount
+        answer = self.get_yn('>>> Mount storage to /home/jovyan/mount? (y/n): ')
+        while answer == 'y':
+            local_path = self.get_valid_local_path('>>> Enter local path: ')
+            container_path = self.get_valid_container_path('>>> Enter bucket path: ','/home/jovyan/mount')
+            permissions = self.get_permissions('>>> Enter permissions (r/rw): ')
+            mounts.append([local_path,container_path,permissions])
+            answer = self.get_yn('>>> Mount additional storage to /home/jovyan/mount? (y/n): ')
 
         # should we start jupyterlab when done creating bucket?
-        valid_inputs = ['y','n']
         msg = '>>> Start bucket and jupyterlab? (y/n): '
-        start = self.get_valid_input(msg,valid_inputs) == 'y'
-
-        # Now that we have the bucket creation recipe, let's actually create it.
-        print("Creating bucket with name: %s" % bucket_name)
-        status = self.program.create_bucket(bucket_name)
-        if not status:
-            print("Failed to create bucket!")
-            return
+        start = self.get_yn(msg) == 'y'
 
         success = True
         print("...adding core...")
@@ -124,32 +108,32 @@ create_bucket bucket_name : Create a new bucket with name bucket_name. Must star
                     return
                 # start jupyterlab
                 print("...starting jupyterlab...")
-                status = self.program.start_jupyter(bucket_name,local_port,container_port,lab=True)
+                status = self.program.start_jupyter(bucket_name,local_port,container_port)
         else:
             print("Failed to create bucket!")
             status = self.program.remove_bucket(bucket_name)
 
-    def do_start_bucket(self,args):
-        """Usage:
-start_bucket bucket_name : Start bucket named bucket_name."""
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 1:
-            print("Syntax Error. Usage: start_bucket bucket_name")
-            return
+#     def do_start_bucket(self,args):
+#         """Usage:
+# start_bucket bucket_name : Start bucket named bucket_name."""
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 1:
+#             print("Syntax Error. Usage: start_bucket bucket_name")
+#             return
 
-        bucket_name = inputs[0]
-        status = self.program.start_bucket(bucket_name)
+#         bucket_name = inputs[0]
+#         status = self.program.start_bucket(bucket_name)
 
-    def do_stop_bucket(self,args):
-        """Usage:
-stop_bucket bucket_name : Stop bucket named bucket_name."""
-        inputs,num_inputs = self.parse_args(args)
-        if num_inputs != 1:
-            print("Syntax Error. Usage: stop_bucket bucket_name")
-            return
+#     def do_stop_bucket(self,args):
+#         """Usage:
+# stop_bucket bucket_name : Stop bucket named bucket_name."""
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 1:
+#             print("Syntax Error. Usage: stop_bucket bucket_name")
+#             return
 
-        bucket_name = inputs[0]
-        status = self.program.stop_bucket(bucket_name)
+#         bucket_name = inputs[0]
+#         status = self.program.stop_bucket(bucket_name)
 
     def do_remove_bucket(self,args):
         """Usage:
@@ -190,29 +174,56 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
 
     def do_start_jupyter(self,args):
         """Usage:
->>> start_jupyter bucket_name local_port bucket_port\t: Start a jupyter notebook server on port bucket_port available at local_port.
->>> start_jupyter bucket_name local_port bucket_port --lab\t: Start a jupyter lab server on port bucket_port available at local_port.
+>>> start_jupyter bucket_name : Start jupyter on bucket bucket_name
         """
         inputs,num_inputs = self.parse_args(args)
-        lab = False
-        if num_inputs == 3:
+
+        if num_inputs == 1:
             pass
-        elif num_inputs == 4:
-            if inputs[3][0] == '-':
-                if inputs[3] == '--lab':
-                    lab = True
-                else:
-                    print("Syntax Error. See 'help start_jupyter'.")
-                    return
         else:
             print("Syntax Error. See 'help start_jupyter'.")
             return
 
-        bucket_name = inputs[0]
-        local_port = int(inputs[1])
-        bucket_port = int(inputs[2])
 
-        status = self.program.start_jupyter(bucket_name,local_port,bucket_port,lab=lab)
+        # get bucket name from input
+        bucket_name = inputs[0]
+
+        if not bucket_name in self.program.bucket_manager.bucket_names:
+            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
+            return False
+
+        # get bucket infomrmation (ports and status)
+        # This stuff may be better suited to exist in some kind of "status query" inside of Resen.py
+        ind = self.program.bucket_manager.bucket_names.index(bucket_name)
+        bucket = self.program.bucket_manager.buckets[ind]
+        # This automatically selects the first port in the list of ports
+        # TODO: Manage multiple ports assigned to one bucket
+        ports = bucket['docker']['port'][0]
+        running_status = bucket['docker']['status']
+
+
+        # if bucket is not running, first start bucket
+        if running_status != 'running':
+            status = self.program.start_bucket(bucket_name)
+
+        # check if jupyter server running
+
+        # then start jupyter 
+        status = self.program.start_jupyter(bucket_name,ports[0],ports[1])
+
+
+    def do_stop_jupyter(self,args):
+        """Usage:
+stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
+        inputs,num_inputs = self.parse_args(args)
+        if num_inputs != 1:
+            print("Syntax Error. Usage: stop_bucket bucket_name")
+            return
+
+        bucket_name = inputs[0]
+        status = self.program.stop_jupyter(bucket_name)
+        status = self.program.stop_bucket(bucket_name)
+
 
 #     def do_add_storage(self,args):
 #         """Usage:
@@ -319,34 +330,48 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         num_inputs = len(inputs)
         return inputs,num_inputs
 
-    def get_valid_input(self,msg,valid_inputs):
-        if len(valid_inputs) == 1:
-            valid_msg = valid_inputs[0]
-        elif len(valid_inputs) == 2:
-            valid_msg = " or ".join(valid_inputs)
-        else:
-            valid_msg = ", ".join(valid_inputs[:-1])
-            valid_msg += ", or %s" % valid_inputs[-1]
+    # The following functions are highly specialized
+
+    def get_yn(self,msg):
+        valid_inputs = ['y', 'n']
         while True:
             answer = input(msg)
-            if not valid_inputs:
-                return answer
             if answer in valid_inputs:
                 return answer
             else:
-                print("Invalid input. Valid inputs are: %s" % valid_msg)
+                print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
 
-    def get_valid_path(self,msg,base=None):
+    def get_valid_name(self,msg):
+        print('Valid names may not contain spaces and must start with a letter and be less than 20 characters long.')
         while True:
-            answer = input(msg)
-            path = pathlib.PurePosixPath(answer)
-            if not base is None:
-                if base in [str(x) for x in list(path.parents)]:
-                    return str(path)
+            name = input(msg)
+
+            # check if bucket_name has spaces in it and is greater than 20 characters
+            # also bucket name must start with a letter
+            if ' ' in name:
+                print("Bucket names may not contain spaces.")
+            elif len(name) > 20:
+                print("Bucket names must be less than 20 characters.")
+            elif not name[0].isalpha():
+                print("Bucket names must start with an alphabetic character.")
+            else:
+                # check if bucket with that name already exists
+                # Is the only reason create_bucket fails if the name is already take?  May need a more rigerous check
+                status = self.program.create_bucket(name)
+                if status:
+                    return name
                 else:
-                    print("Invalid path. Must start with: %s" % base)
-                    continue
-            return str(path)
+                    print("Cannot use the same name as an existing bucket!")
+
+    def get_valid_version(self,msg,valid_versions):
+        print('Available versions: {}'.format(", ".join(valid_versions)))
+        while True:
+            version = input(msg)
+            if version in valid_versions:
+                return version
+            else:
+                print("Invalid version. Available versions: {}".format(", ".join(valid_versions)))
+
 
     def get_port(self):
         # this is not atomic, so it is possible that another process might snatch up the port
@@ -359,6 +384,36 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
                 return port
             else:
                 port += 1
+
+    def get_valid_local_path(self,msg):
+        while True:
+            path = input(msg)
+            path = pathlib.PurePosixPath(path)
+            if os.path.isdir(str(path)):
+                return str(path)
+            else:
+                print('Cannot find local path entered.')
+
+    def get_valid_container_path(self,msg,base):
+        while True:
+            path = input(msg)
+            path = pathlib.PurePosixPath(path)
+            if base in [str(x) for x in list(path.parents)]:
+                return str(path)
+            else:
+                print("Invalid path. Must start with: {}".format(base))
+
+    def get_permissions(self,msg):
+        valid_inputs = ['r', 'rw']
+        while True:
+            answer = input(msg)
+            if answer in valid_inputs:
+                return answer
+            else:
+                print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
+
+
+
 
 
 def main():
