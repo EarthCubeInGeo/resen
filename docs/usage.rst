@@ -12,7 +12,7 @@ This will open the resen tool::
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
     
-    Resen 2019.1.0rc1 -- Reproducible Software Environment
+    Resen 2019.1.0rc2 -- Reproducible Software Environment
     
     [resen] >>> 
 
@@ -22,70 +22,82 @@ Type ``help`` to see available commands::
 
 This will produce a list of resen commands you will use to manage your resen buckets::
 
-	Documented commands (type help <topic>):
-	========================================
-	EOF            exit  quit           start_bucket   status     
-	create_bucket  help  remove_bucket  start_jupyter  stop_bucket
-
+    Documented commands (type help <topic>):
+    ========================================
+    EOF            exit  quit           start_jupyter  stop_jupyter
+    create_bucket  help  remove_bucket  status
 
 To get more information about a specific command, enter ``help <command>``.
 
 Resen Workflow
 ==============
 
-Use Resen to create, start, and stop buckets. Buckets are portable, system independent environments where code can be developed and run. Buckets can be shared between Windows, Linux, and macos systems and all analysis within the bucket will be run exactly the same. Resen buckets come preinstalled with a variety of common geospace software that can be used immediately in analysis.
+Use Resen to create and remove buckets. Buckets are portable, system independent environments where code can be developed and run. Buckets can be shared between Windows, Linux, and macos systems and all analysis within the bucket will be run exactly the same. Resen buckets come preinstalled with a variety of common geospace software that can be used immediately in analysis.
 
 Setup a New Bucket
 ------------------
 
 1. Creating a new bucket is performed with the command::
 
-	[resen] >>> create_bucket bucket_name
+     [resen] >>> create_bucket
 
-The ``create_bucket`` command queries the user for several pieces of information required to create a bucket. Bucket names must be a string of less than 20 characters with no spaces. To create a bucket named ``amber``::
+   The ``create_bucket`` command queries the user for several pieces of information required to create a bucket. First it asks for the bucket name. Creating a bucket named ``amber``::
 
-	[resen] >>> create_bucket amber
+     Please enter a name for your bucket.
+     Valid names may not contain spaces and must start with a letter and be less than 20 characters long.``
+     >>> Enter bucket name: amber
 
-Next, the user is asked to specify the version of resen-core to use::
+   Next, the user is asked to specify the version of resen-core to use::
 
-	Please choose a version of resen-core. Available versions: 2019.1.0rc1
-	>>> Select a version: 
+     Please choose a version of resen-core.
+     Available versions: 2019.1.0rc2
+     >>> Select a version: 2019.1.0.rc2
 
-Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/work``::
+   Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/work``::
 
-    >>> Mount storage to /home/jovyan/work? (y/n): y
-    >>> Enter local path:
+     Local directories can be mounted to either /home/jovyan/work or /home/jovyan/mount/ in
+     a bucket. The /home/jovyan/work location is a workspace and /home/jovyan/mount/ is intended
+     for mounting in data. You will have rw privileges to everything mounted in work, but can
+     specify permissions as either r or rw for directories in mount. Code and data created in a
+     bucket can ONLY be accessed outside the bucket or after the bucket has been deleted if it is
+     saved in a mounted local directory.
+     >>> Mount storage to /home/jovyan/work? (y/n): y
+     >>> Enter local path: /some/local/path
 
-Followed by additional local directories that can be mounted under ``/home/jovyan/mount``::
+   Followed by additional local directories that can be mounted under ``/home/jovyan/mount``::
 
-    >>> Mount additional storage to /home/jovyan/mount? (y/n):
+     >>> Mount storage to /home/jovyan/mount? (y/n): y
+     >>> Enter local path: /some/other/local/path
+     >>> Enter bucket path: /home/jovyan/mount/data001
+     >>> Enter permissions (r/rw): r
+     >>> Mount additional storage to /home/jovyan/mount? (y/n): n
 
-Finally, the user is asked if they want jupyterlab to be started::
+   Finally, the user is asked if they want jupyterlab to be started::
 
-    >>> Start bucket and jupyterlab? (y/n):
+     >>> Start bucket and jupyterlab? (y/n): y
 
-after which resen will begin creating the bucket. Example output for a new bucket named ``amber`` with jupyterlab started is::
+   after which resen will begin creating the bucket. Example output for a new bucket named ``amber`` with jupyterlab started is::
 
-    Creating bucket with name: test
-    ...adding core...
-    ...adding mounts...
-    Bucket created successfully!
-    Jupyter lab can be accessed in a browser at: http://localhost:9000/?token=61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a
+     ...adding core...
+     ...adding mounts...
+     Bucket created successfully!
+     ...starting jupyterlab...
+     Jupyter lab can be accessed in a browser at: http://localhost:9000/?token=61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a
 
 2. Check the status of the bucket::
 
 	[resen] >>> status amber
-	{'bucket': {'name': 'amber'}, 'docker': {'image': 'docker.io/earthcubeingeo/resen-core:2019.1.0rc1', 'container': None, 'port': [[8000, 8080, True]], 'storage': [['/home/usr/code/fossil', '/home/jovyan/work/fossil', 'rw'], ['/home/usr/data', '/home/jovyan/work/data', 'ro']], 'status': None}}
+	{'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc1', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff', 'pull_image': 'earthcubeingeo/resen-core@sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b'}}
 
-At this point, the bucket should have a name, an image, at least one port, and at least one storage location.  Status should be ``None``.
+At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage location.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
 
 Work with a Bucket
 ------------------
 1. Check what buckets are available with ``status``::
 
 	[resen] >>> status
-	Bucket Name         Docker Image             Status                   
-	amber               docker.io/earthcubei...  running
+	Bucket Name         Docker Image             Status
+	amber               2019.1.0rc2              running
 
 If a bucket is running, it will consume system resources accordingly.
 
@@ -97,7 +109,7 @@ The status of ``amber`` should now be ``exited``::
 
 	[resen] >>> status
 	Bucket Name         Docker Image             Status                   
-	amber               docker.io/earthcubei...  exited  
+	amber               2019.1.0rc2              exited  
 
 The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
 
