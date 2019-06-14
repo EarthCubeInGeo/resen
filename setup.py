@@ -23,7 +23,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='19.1.0',    #TODO: parse this from resen/__init__.py
+    version='2019.1.0rc2',    #TODO: parse this from resen/__init__.py
 
     description='A python package for watching, copying, and transporting files around.',
     long_description=long_description,
@@ -33,7 +33,7 @@ setup(
 
     # Author details
     author='NSF Integrated Geoscience Observatory',
-    author_email='ashton.reimer@sri.com',
+    author_email='ingeo-team@ingeo.datatransport.org',
 
     # Choose your license
     license='GPLv3',

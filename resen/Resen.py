@@ -144,9 +144,9 @@ class BucketManager():
     def __get_valid_cores(self):
         # TODO: download json file from resen-core github repo
         #       and if that fails, fallback to hardcoded list
-        return [{"version":"2019.1.0rc1","repo":"resen-core","org":"earthcubeingeo",
-            "image_id":'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
-            "repodigest":'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b'},]
+        return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
+                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},]
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
@@ -750,7 +750,7 @@ class DockerHelper():
             nchars = int(percentage*scale)
             bar = "\r["+nchars*"="+">"+(int(100*scale)-nchars)*" "+"]"
             time_info = "Elapsed time: %s"%truncate_secs(current_time - t0)
-            print(bar+" %5.2f %%, %5.3f/%4.2fGB %s"%(percentage,
+            print(bar+" %6.2f %%, %5.3f/%4.2fGB %s"%(percentage,
                 accumulated/1024**3,sum_total/1024**3,time_info),end="")
 
         id_list = []
