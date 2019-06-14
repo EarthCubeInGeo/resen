@@ -87,7 +87,7 @@ Setup a New Bucket
 2. Check the status of the bucket::
 
     [resen] >>> status amber
-    {'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc1', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff', 'pull_image': 'earthcubeingeo/resen-core@sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b'}}
+    {'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc2', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:3ba43e401c1b1a8eca8969aec8426a22d99bca349fd837270fa06dbcaefaeb47', 'pull_image': 'earthcubeingeo/resen-core@sha256:c3783e3b7f05ec17f9381a01009b794666107780d964e8087c62f7baaa00049d'}}
 
 At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage location.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
 

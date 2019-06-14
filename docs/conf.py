@@ -22,9 +22,9 @@ copyright = '2019, Integrated Geoscience Observatory'
 author = 'Resen Team'
 
 # The full version, including alpha/beta/rc tags
-release = 'v2019.1.0rc1'
+release = 'v2019.1.0rc2'
 
-master_doc = 'readme'
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
