@@ -86,8 +86,8 @@ Setup a New Bucket
 
 2. Check the status of the bucket::
 
-	[resen] >>> status amber
-	{'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc1', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff', 'pull_image': 'earthcubeingeo/resen-core@sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b'}}
+    [resen] >>> status amber
+    {'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc1', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff', 'pull_image': 'earthcubeingeo/resen-core@sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b'}}
 
 At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage location.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
 
@@ -95,51 +95,44 @@ Work with a Bucket
 ------------------
 1. Check what buckets are available with ``status``::
 
-	[resen] >>> status
-	Bucket Name         Docker Image             Status
-	amber               2019.1.0rc2              running
+    [resen] >>> status
+    Bucket Name         Docker Image             Status
+    amber               2019.1.0rc2              running
 
-If a bucket is running, it will consume system resources accordingly.
+   If a bucket is running, it will consume system resources accordingly.
 
-2. Stop the bucket::
+2. Stop jupyter lab from a bucket::
 
-	[resen] >>> stop_bucket amber
+    [resen] >>> stop_jupyter amber
 
-The status of ``amber`` should now be ``exited``::
+   The status of ``amber`` should now be ``exited``::
 
-	[resen] >>> status
-	Bucket Name         Docker Image             Status                   
-	amber               2019.1.0rc2              exited  
+    [resen] >>> status
+    Bucket Name         Docker Image             Status
+    amber               2019.1.0rc2              exited
 
-The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
+   The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
 
-3. Start a bucket ``amber`` that has been stopped::
+3. Start a jupyter lab in bucket ``amber`` that has been stopped::
 
-	[resen] >>> start_bucket amber
+    [resen] >>> start_jupyter amber
 
-The status of ``amber`` should now be ``running``::
+   The status of ``amber`` should now be ``running``::
 
-	[resen] >>> status
-	Bucket Name         Docker Image             Status                   
-	amber               docker.io/earthcubei...  running                  
+    [resen] >>> status
+    Bucket Name         Docker Image             Status
+    amber               2019.1.0rc2              running
 
-3. Use the bucket to start a jupyter server.  Make sure to include the local port and the bucket port that forwards to it.  Start a jupyter server in ``amber``::
 
-	[resen] >>> start_jupyter amber 8000 8080
-
-The jupyter server starts in the ``/home/jovyan/work`` directory, which should include the persistent storage directories ``fossil`` and ``data``. Alternatively you can start directly a jupyter lab adding ``--lab`` to the previous command::
-
-	[resen] >>> start_jupyter amber 8000 8080 --lab
-	
-or, if you already started the notebook without ``--lab`` you can change the url in your browser from ``http://localhost:8000/tree`` to ``http://localhost:8000/lab``. One can go back from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
-
-4. Stop jupyter lab by clicking "Quit" in the "File" menu of Jupyter lab.
+   The jupyter lab server starts in the ``/home/jovyan`` directory, which should include the persistent storage directories ``work`` and ``mount``.
+   The user can alternate between the jupyter lab and the classic notebook view by changing the url in the browser from ``http://localhost:8000/lab`` to ``http://localhost:8000/tree``. Alternatively one can switch from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
 
 
 Remove a Bucket
 ---------------
-Delete a bucket::
+The user can delete a bucket with the following command::
 
-	remove_bucket amber
+    [resen] >>> remove_bucket amber
 
+A bucket that is running needs to be stopped before removed.
 WARNING: This will permanently delete the bucket. Any work that was not saved in a mounted storage directory will be lost.
