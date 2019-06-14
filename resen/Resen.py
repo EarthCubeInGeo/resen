@@ -750,7 +750,7 @@ class DockerHelper():
             nchars = int(percentage*scale)
             bar = "\r["+nchars*"="+">"+(int(100*scale)-nchars)*" "+"]"
             time_info = "Elapsed time: %s"%truncate_secs(current_time - t0)
-            print(bar+" %5.2f %%, %5.3f/%4.2fGB %s"%(percentage,
+            print(bar+" %6.2f %%, %5.3f/%4.2fGB %s"%(percentage,
                 accumulated/1024**3,sum_total/1024**3,time_info),end="")
 
         id_list = []
