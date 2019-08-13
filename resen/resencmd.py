@@ -376,7 +376,7 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
     def get_port(self):
         # this is not atomic, so it is possible that another process might snatch up the port
         port = 9000
-        assigned_ports = [x['docker']['port'][0] for x in self.program.bucket_manager.buckets if len(x['docker']['port'])]
+        assigned_ports = [x['docker']['port'][0][0] for x in self.program.bucket_manager.buckets if len(x['docker']['port'])]
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 assigned = s.connect_ex(('localhost', port)) == 0
