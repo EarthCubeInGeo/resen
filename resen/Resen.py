@@ -15,7 +15,7 @@
 # TODO
 # 1) list available resen-core version from dockerhub
 # 2) create a bucket manifest from existing bucket
-# 3) load a bucket from manifest file (supports moving from cloud to local, or from one computer to another) 
+# 3) load a bucket from manifest file (supports moving from cloud to local, or from one computer to another)
 # 4) keep track of whether a jupyter server is running or not already and provide shutdown_jupyter and open_jupyter commands
 # 5) freeze a bucket
 # 6) check for python 3, else throw error
@@ -135,11 +135,14 @@ class BucketManager():
 
         self.resen_root_dir = resen_root_dir
         self.dockerhelper = DockerHelper()
-        # load 
+        # load
         self.load_config()
         self.valid_cores = self.__get_valid_cores()
         self.selinux = self.__detect_selinux()
-        self.storage_whitelist = ['/home/jovyan/work','/home/jovyan/mount']
+        ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
+        ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
+        ### mount to an illegal location but the user might.
+        self.storage_whitelist = ['/home/jovyan/mount']
 
     def __get_valid_cores(self):
         # TODO: download json file from resen-core github repo
@@ -157,7 +160,7 @@ class BucketManager():
         else:
         # if it does exist, load it and return
         # TODO: handle exceptions due to file reading problems (incorrect file permissions)
-            with open(bucket_config,'r') as f: 
+            with open(bucket_config,'r') as f:
                 params = json.load(f)
 
         self.buckets = params
@@ -168,7 +171,7 @@ class BucketManager():
     def save_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
         # TODO: handle exceptions due to file writing problems (no free disk space, incorrect file permissions)
-        with open(bucket_config,'w') as f: 
+        with open(bucket_config,'w') as f:
             json.dump(self.buckets,f)
 
     def create_bucket(self,bucket_name):
@@ -274,7 +277,7 @@ class BucketManager():
 
     def export(self):
     # export a bucket
-    # 
+    #
         pass
 
     def freeze_bucket(self):
@@ -310,6 +313,7 @@ class BucketManager():
             return False
 
         # check that user is mounting in a whitelisted location
+        # this is local use specific - move to resencmd?
         valid = False
         child = Path(container)
         for loc in self.storage_whitelist:
@@ -333,9 +337,10 @@ class BucketManager():
         # TODO: check if storage location exists on host
         self.buckets[ind]['docker']['storage'].append([local,container,permissions])
         self.save_config()
-        
+
         return True
 
+    # Function obsolete?
     def remove_storage(self,bucket_name,local):
         if not bucket_name in self.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
@@ -346,7 +351,7 @@ class BucketManager():
         if self.buckets[ind]['docker']['status'] is not None:
             print("ERROR: Bucket has already been started, cannot remove storage: %s" % (local))
             return False
-        
+
         # check if storage already exists in list of storage
         existing_storage = [x[0] for x in self.buckets[ind]['docker']['storage']]
         try:
@@ -356,7 +361,7 @@ class BucketManager():
         except ValueError:
             print("ERROR: Storage location %s not associated with bucket %s" % (local,bucket_name))
             return False
-        
+
         return True
 
     def add_port(self,bucket_name,local,container,tcp=True):
@@ -379,9 +384,10 @@ class BucketManager():
         # TODO: check if port location exists on host
         self.buckets[ind]['docker']['port'].append([local,container,tcp])
         self.save_config()
-        
+
         return True
 
+    # function obsolete?
     def remove_port(self,bucket_name,local):
         if not bucket_name in self.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
@@ -392,7 +398,7 @@ class BucketManager():
         if self.buckets[ind]['docker']['status'] is not None:
             print("ERROR: Bucket has already been started, cannot remove port: %s" % (local))
             return False
-        
+
         # check if port already exists in list of port
         existing_port = [x[0] for x in self.buckets[ind]['docker']['port']]
         try:
@@ -402,7 +408,7 @@ class BucketManager():
         except ValueError:
             print("ERROR: port location %s not associated with bucket %s" % (local,bucket_name))
             return False
-        
+
         return True
 
     def add_image(self,bucket_name,docker_image):
@@ -423,7 +429,7 @@ class BucketManager():
         if not docker_image in valid_versions:
             print("ERROR: Invalid resen-core version %s. Valid version: %s" % (docker_image,', '.join(valid_versions)))
             return False
-        
+
         for x in self.valid_cores:
             if docker_image == x['version']:
                 image = x['version']
@@ -435,7 +441,7 @@ class BucketManager():
         self.buckets[ind]['docker']['image_id'] = image_id
         self.buckets[ind]['docker']['pull_image'] = pull_image
         self.save_config()
-        
+
         return True
 
     # TODO: def change_image(self,bucket_name,new_docker_image)
@@ -450,7 +456,7 @@ class BucketManager():
 
         ind = self.bucket_names.index(bucket_name)
         bucket = self.buckets[ind]
-        
+
         # Make sure we have an image assigned to the bucket
         existing_image = bucket['docker']['image']
         if existing_image is None:
@@ -493,7 +499,7 @@ class BucketManager():
             #contained is already running and we should throw an error
             print('ERROR: Bucket %s is already running!' % (bucket['bucket']['name']))
             return False
-    
+
     def stop_bucket(self,bucket_name):
         if not bucket_name in self.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
@@ -659,7 +665,7 @@ class BucketManager():
         try:
             p = Popen(['/usr/sbin/getenforce'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
             output, err = p.communicate()
-            output = output.decode('utf-8').strip('\n')   
+            output = output.decode('utf-8').strip('\n')
             rc = p.returncode
 
             if rc == 0 and output == 'Enforcing':
@@ -681,7 +687,7 @@ class BucketManager():
 class DockerHelper():
     def __init__(self):
         # TODO: define these in a dictionary or json file for each version of resen-core
-        # need to get information for each resen-core from somewhere. 
+        # need to get information for each resen-core from somewhere.
         # Info like, what internal port needs to be exposed? Where do we get the image from? etc.
         # mounting directory in the container?
         self.container_prefix = 'resen_'

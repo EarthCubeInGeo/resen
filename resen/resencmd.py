@@ -32,7 +32,7 @@ class ResenCmd(cmd.Cmd):
 
     # --------------- resen stuff --------------------
     # try to create a bucket by guiding user
-    # if 
+    # if
     def do_create_bucket(self,args):
         """Usage:
 create_bucket : Create a new bucket by responding to the prompts provided."""
@@ -53,23 +53,26 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
         container_port = local_port
 
         # Mounting persistent storage
-        msg =  'Local directories can be mounted to either /home/jovyan/work or '
-        msg += '/home/jovyan/mount/ in a bucket. The /home/jovyan/work location is '
-        msg += 'a workspace and /home/jovyan/mount/ is intended for mounting in data. '
-        msg += 'You will have rw privileges to everything mounted in work, but can '
-        msg += 'specified permissions as either r or rw for directories in mount. Code '
-        msg += 'and data created in a bucket can ONLY be accessed outside the bucket or '
-        msg += 'after the bucket has been deleted if it is saved in a mounted local directory.'
+        msg =  'Local directories can be mounted to /home/jovyan/mount in a bucket.  '
+        # msg += '/home/jovyan/mount/ in a bucket. The /home/jovyan/work location is '
+        # msg += 'a workspace and /home/jovyan/mount/ is intended for mounting in data. '
+        msg += 'You can specify either r or rw privileges  for each directory mounted.  '
+        msg += 'Nothing mounted will be included in an exported bucket.  Any scripts, data,'
+        msg += 'ect. that you would like to persist in an exported bucket MUST be copied '
+        msg += 'into another part of the bucket.'
+        # msg += 'specified permissions as either r or rw for directories in mount. Code '
+        # msg += 'and data created in a bucket can ONLY be accessed outside the bucket or '
+        # msg += 'after the bucket has been deleted if it is saved in a mounted local directory.'
         print(msg)
         mounts = list()
 
-        # query for mount to work
-        answer = self.get_yn('>>> Mount storage to /home/jovyan/work? (y/n): ')
-        if answer == 'y':
-            local_path = self.get_valid_local_path('>>> Enter local path: ')
-            container_path = '/home/jovyan/work'
-            permissions = 'rw'
-            mounts.append([local_path,container_path,permissions])
+        # # query for mount to work
+        # answer = self.get_yn('>>> Mount storage to /home/jovyan/work? (y/n): ')
+        # if answer == 'y':
+        #     local_path = self.get_valid_local_path('>>> Enter local path: ')
+        #     container_path = '/home/jovyan/work'
+        #     permissions = 'rw'
+        #     mounts.append([local_path,container_path,permissions])
 
         # query for mounts to mount
         answer = self.get_yn('>>> Mount storage to /home/jovyan/mount? (y/n): ')
@@ -169,7 +172,7 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         else:
             print("Syntax Error. See 'help status'.")
             return
-        
+
         status = self.program.list_buckets(names_only=names_only,bucket_name=bucket_name)
 
     def do_start_jupyter(self,args):
@@ -208,7 +211,7 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
 
         # check if jupyter server running
 
-        # then start jupyter 
+        # then start jupyter
         status = self.program.start_jupyter(bucket_name,ports[0],ports[1])
 
 
@@ -311,7 +314,7 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
 
     def do_quit(self,arg):
         """quit : Terminates the application."""
-        # turn off currently running buckets or leave them running? leave running but 
+        # turn off currently running buckets or leave them running? leave running but
         print("Exiting")
         return True
 
@@ -454,5 +457,3 @@ def main():
 if __name__ == '__main__':
 
     main()
-
-
