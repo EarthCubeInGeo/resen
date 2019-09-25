@@ -82,6 +82,9 @@ class Resen():
     def stop_jupyter(self,bucket_name):
         return self.bucket_manager.stop_jupyter(bucket_name)
 
+    def export_bucket(self,bucket_name,outfile):
+        return self.bucket_manager.export_bucket(bucket_name,outfile)
+
     def _get_config_dir(self):
         appname = 'resen'
 
@@ -625,6 +628,16 @@ class BucketManager():
 
         return True
 
+    def export_bucket(self,bucket_name,outfile):
+        if not bucket_name in self.bucket_names:
+            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
+            return False
+
+        ind = self.bucket_names.index(bucket_name)
+        bucket = self.buckets[ind]
+        status = self.dockerhelper.export_container(bucket['docker']['container'], outfile)
+        return status
+
     def get_jupyter_pid(self,container):
 
         result = self.dockerhelper.execute_command(container,'ps -ef',detach=False)
@@ -847,6 +860,17 @@ class DockerHelper():
         return True
 
 
+    def export_container(self,container_id,filename):
+        container = self.get_container(container_id)
+        if container is None:
+            return False
+
+        result = container.export()
+        with open(filename, 'wb') as f:
+            for chunk in result:
+                f.write(chunk)
+
+        return os.path.isfile(filename)
 
     # helper functions
 

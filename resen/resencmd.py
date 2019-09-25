@@ -54,25 +54,12 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
 
         # Mounting persistent storage
         msg =  'Local directories can be mounted to /home/jovyan/mount in a bucket.  '
-        # msg += '/home/jovyan/mount/ in a bucket. The /home/jovyan/work location is '
-        # msg += 'a workspace and /home/jovyan/mount/ is intended for mounting in data. '
         msg += 'You can specify either r or rw privileges  for each directory mounted.  '
         msg += 'Nothing mounted will be included in an exported bucket.  Any scripts, data,'
         msg += 'ect. that you would like to persist in an exported bucket MUST be copied '
         msg += 'into another part of the bucket.'
-        # msg += 'specified permissions as either r or rw for directories in mount. Code '
-        # msg += 'and data created in a bucket can ONLY be accessed outside the bucket or '
-        # msg += 'after the bucket has been deleted if it is saved in a mounted local directory.'
         print(msg)
         mounts = list()
-
-        # # query for mount to work
-        # answer = self.get_yn('>>> Mount storage to /home/jovyan/work? (y/n): ')
-        # if answer == 'y':
-        #     local_path = self.get_valid_local_path('>>> Enter local path: ')
-        #     container_path = '/home/jovyan/work'
-        #     permissions = 'rw'
-        #     mounts.append([local_path,container_path,permissions])
 
         # query for mounts to mount
         answer = self.get_yn('>>> Mount storage to /home/jovyan/mount? (y/n): ')
@@ -227,6 +214,18 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
         status = self.program.stop_jupyter(bucket_name)
         status = self.program.stop_bucket(bucket_name)
 
+    def do_export_bucket(self,args):
+        """Usage:
+export_bucket bucket_name: Export bucket to a sharable *.tar file."""
+        inputs,num_inputs = self.parse_args(args)
+        if num_inputs != 1:
+            print("Syntax Error. Usage: export_bucket bucket_name")
+            return
+
+        file_name = self.get_valid_local_path('>>> Enter name for output tar file: ', file=True)
+
+        bucket_name = inputs[0]
+        status = self.program.export_bucket(bucket_name, file_name)
 
 #     def do_add_storage(self,args):
 #         """Usage:
@@ -389,11 +388,13 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
             else:
                 port += 1
 
-    def get_valid_local_path(self,msg):
+    def get_valid_local_path(self,msg,file=False):
         while True:
             path = input(msg)
             path = pathlib.PurePosixPath(path)
             if os.path.isdir(str(path)):
+                return str(path)
+            elif file and os.path.isdir(str(path.parent)):
                 return str(path)
             else:
                 print('Cannot find local path entered.')
