@@ -85,6 +85,9 @@ class Resen():
     def export_bucket(self,bucket_name,outfile):
         return self.bucket_manager.export_bucket(bucket_name,outfile)
 
+    def import_bucket(self, filename):
+        return self.bucket_manager.import_bucket(filename)
+
     def _get_config_dir(self):
         appname = 'resen'
 
@@ -638,6 +641,29 @@ class BucketManager():
         status = self.dockerhelper.export_container(bucket['docker']['container'], outfile)
         return status
 
+    def import_bucket(self,filename):
+        # self.dockerhelper.import_image(filename,name='earthcubeingeo/new-image')
+
+        status = self.create_bucket('new_bucket')
+        print(status)
+        # status = self.add_image('new_bucket','earthcubeingeo/new-image')
+        # print(status)
+        ind = self.bucket_names.index('new_bucket')
+        self.buckets[ind]['docker']['image'] = 'earthcubeingeo/new-image'
+        self.buckets[ind]['docker']['image_id'] = 'sha256:b2ff11cc97eded35057cb680bb048fa78ed3588bd9dfd3de1a168024cfb9b38b'
+        self.buckets[ind]['docker']['pull_image'] = None
+        self.save_config()
+        status = self.add_port('new_bucket',9050,9050,tcp=True)
+        print(status)
+
+        status = self.start_bucket('new_bucket')
+        print(status)
+        status = self.start_jupyter('new_bucket',9050,9050)
+        print(status)
+
+
+
+
     def get_jupyter_pid(self,container):
 
         result = self.dockerhelper.execute_command(container,'ps -ef',detach=False)
@@ -872,6 +898,11 @@ class DockerHelper():
 
         return os.path.isfile(filename)
 
+    def import_image(self,filename,name=None):
+        cli = docker.APIClient()
+        cli.import_image_from_file(filename,repository=name)
+        # client = docker.from_env()
+        print(self.docker.images.list())
     # helper functions
 
     def get_container_status(self, container_id):

@@ -227,6 +227,11 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
         bucket_name = inputs[0]
         status = self.program.export_bucket(bucket_name, file_name)
 
+    def do_import_bucket(self,args):
+        file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', file=True)
+
+        status = self.program.import_bucket(file_name)
+        
 #     def do_add_storage(self,args):
 #         """Usage:
 # >>> add_storage bucket_name local_path container_path permissions : Add a local_path storage location available at container_path.
