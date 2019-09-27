@@ -43,10 +43,8 @@ class DockerHelper():
 
         create_kwargs['volumes'] = dict()
         for host, container, permissions in storage:
-            # TODO: if SELinux, modify permissions to include ",Z"
-            key = host
             temp = {'bind': container, 'mode': permissions}
-            create_kwargs['volumes'][key] = temp
+            create_kwargs['volumes'][host] = temp
 
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
@@ -54,9 +52,6 @@ class DockerHelper():
             print("Pulling image: %s" % image_name)
             print("   This may take some time...")
             status = self.stream_pull_image(pull_image)
-            if not status:
-                print("ERROR: Failed to pull image")
-                return None
             image = self.docker.images.get(pull_image)
             repo,digest = pull_image.split('@')
             # When pulling from repodigest sha256 no tag is assigned. So:
@@ -107,9 +102,7 @@ class DockerHelper():
             # Last update of the progress bar:
             update_bar(id_total,sum(id_current),t0,current_time)
         except Exception as e:
-            print("\nException encountered while pulling image %s" % pull_image)
-            print("Exception: %s" % str(e))
-            return False
+            raise RuntimeError("\nException encountered while pulling image {}\nException: {}".format(pull_image,str(e)))
 
         print() # to avoid erasing the progress bar at the end
 
@@ -117,56 +110,29 @@ class DockerHelper():
 
     def start_container(self, container_id):
         # need to check if bucket config has changed since last run
-        # need to check if bucket is already running
         container = self.get_container(container_id)
-        if container is None:
-            return False
-
         container.start()   # this does nothing if already started
         container.reload()
         time.sleep(0.1)
-
-        if container.status == 'running':
-            return True
-        else:
-            return False
+        return container.status
 
 
     def execute_command(self,container_id,command,detach=True):
         container = self.get_container(container_id)
-        if container is None:
-            return False
-
         result = container.exec_run(command,detach=detach)
         return result.exit_code, result.output
 
 
-
     def stop_container(self,container_id):
         container = self.get_container(container_id)
-        if container is None:
-            return False
-
         container.stop()    # this does nothing if already stopped
         container.reload()
         time.sleep(0.1)
-
-        if container.status == 'exited':
-            return True
-        else:
-            return False
+        return container.status
 
     def remove_container(self,container_id):
         container = self.get_container(container_id)
-        if container is None:
-            return False
-
-        if not container.status == 'exited':
-            print("ERROR: Container is still running!")
-            return False
-
         container.remove()
-
         return True
 
 

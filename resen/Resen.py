@@ -134,8 +134,7 @@ class Resen():
     #         - used to share and freeze buckets
     #         - track information about buckets (1st time using, which are running?)
         if bucket_name in self.bucket_names:
-            print("ERROR: Bucket with name: %s already exists!" % (bucket_name))
-            return False
+            raise ValueError("Bucket with name: %s already exists!" % (bucket_name))
 
         params = dict()
         params['bucket'] = dict()
@@ -173,13 +172,6 @@ class Resen():
                     print("{:<20}{:<25}{:<25}".format(name, image, status))
 
         else:   # TODO, print all bucket info for bucket_name
-            # if not bucket_name in self.bucket_names:
-            #     print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
-            #     return False
-            #
-            # ind = self.bucket_names.index(bucket_name)
-            # TODO: make this print a nice table
-            # print(self.buckets[ind])
             bucket = self.get_bucket(bucket_name)
             print(bucket)
 
@@ -205,30 +197,28 @@ class Resen():
         self.update_bucket_statuses()
         bucket = self.get_bucket(bucket_name)
 
+        # cannot remove bucket if currently running
         if bucket['docker']['status'] == 'running':
-            #container is running and we should throw an error
             raise RuntimeError('ERROR: Bucket %s is running, cannot remove.' % (bucket['bucket']['name']))
-            # print('ERROR: Bucket %s is running, cannot remove.' % (bucket['bucket']['name']))
-            # return False
 
+        # if docker container created, remove it first
         if bucket['docker']['status'] in ['created','exited'] and bucket['docker']['container'] is not None:
             # then we can remove container and update status
             success = self.dockerhelper.remove_container(bucket['docker']['container'])
-            if success:
-                bucket['docker']['status'] = None
-                bucket['docker']['container'] = None
-                self.save_config()
+            bucket['docker']['status'] = None
+            bucket['docker']['container'] = None
+            self.save_config()
 
         ind = self.bucket_names.index(bucket_name)
         # bucket = self.buckets[ind]
-        if bucket['docker']['container'] is None:
-            self.buckets.pop(ind)
-            self.bucket_names = [x['bucket']['name'] for x in self.buckets]
-            self.save_config()
-            return True
-        else:
-            print('ERROR: Failed to remove bucket %s' % (bucket['bucket']['name']))
-            return False
+        # if bucket['docker']['container'] is None:
+        self.buckets.pop(ind)
+        self.bucket_names = [x['bucket']['name'] for x in self.buckets]
+        self.save_config()
+        return True
+        # else:
+        #     print('ERROR: Failed to remove bucket %s' % (bucket['bucket']['name']))
+        #     return False
 
     def load(self):
     # - import a bucket
@@ -255,30 +245,23 @@ class Resen():
 
         bucket = self.get_bucket(bucket_name)
 
-        # check if bucket is running
+        # if container has been created, cannot add storage
         if bucket['docker']['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot add storage: %s" % (local))
-            # print("ERROR: Bucket has already been started, cannot add storage: %s" % (local))
-            # return False
 
         # check if storage already exists in list of storage
         existing_local = [x[0] for x in bucket['docker']['storage']]
         if local in existing_local:
             raise FileExistsError('Local storage location already in use in bucket!')
-            # print("ERROR: Local storage location already in use in bucket!")
-            # return False
         existing_container = [x[1] for x in bucket['docker']['storage']]
         if container in existing_container:
             raise FileExistsError('Container storage location already in use in bucket!')
-            # print("ERROR: Container storage location already in use in bucket!")
-            # return False
 
         # check that local file path exists
         if not Path(local).is_dir():
             raise FileNotFoundError('Cannot find local storage location!')
 
         # check that user is mounting in a whitelisted location
-        # this is local use specific - move to resencmd?
         valid = False
         child = Path(container)
         for loc in self.storage_whitelist:
@@ -287,13 +270,10 @@ class Resen():
                 valid = True
         if not valid:
             raise ValueError("Invalid mount location. Can only mount storage into: %s." % ', '.join(self.storage_whitelist))
-            # print("ERROR: Invalid mount location. Can only mount storage into: %s." % ', '.join(self.storage_whitelist))
-            # return False
 
+        # check and adjust permissions
         if not permissions in ['r','ro','rw']:
             raise ValueError("Invalid permissions. Valid options are 'r' and 'rw'.")
-            # print("ERROR: Invalid permissions. Valid options are 'r' and 'rw'.")
-            # return False
 
         if permissions in ['r','ro']:
             permissions = 'ro'
@@ -307,46 +287,39 @@ class Resen():
 
         return True
 
-    # Function obsolete?
+
     def remove_storage(self,bucket_name,local):
 
         bucket = self.get_bucket(bucket_name)
 
-        # check if bucket is running
+        # if container created, cannot remove storage
         if bucket['docker']['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot add storage: %s" % (local))
-            # print("ERROR: Bucket has already been started, cannot remove storage: %s" % (local))
-            # return False
 
         # check if storage already exists in list of storage
         existing_storage = [x[0] for x in bucket['docker']['storage']]
         try:
-            ind2 = existing_storage.index(local)
-            bucket['docker']['storage'].pop(ind2)
+            ind = existing_storage.index(local)
+            bucket['docker']['storage'].pop(ind)
             self.save_config()
         except ValueError:
             raise FileNotFoundError("Storage location %s not associated with bucket %s" % (local,bucket_name))
-            # print("ERROR: Storage location %s not associated with bucket %s" % (local,bucket_name))
-            # return False
 
         return True
+
 
     def add_port(self,bucket_name,local,container,tcp=True):
 
         bucket = self.get_bucket(bucket_name)
 
-        # check if bucket is running
+        # if container has been created, cannot add port
         if bucket['docker']['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot add port: %s" % (local))
-            # print("ERROR: Bucket has already been started, cannot add port: %s" % (local))
-            # return False
 
-        # check if local port already exists in list of ports
+        # check if local/container port already exists in list of ports
         existing_local = [x[0] for x in bucket['docker']['port']]
         if local in existing_local:
             raise ValueError('Local port location already in use in bucket!')
-            # print("ERROR: Local port location already in use in bucket!")
-            # return False
         existing_container = [x[1] for x in bucket['docker']['port']]
         if container in existing_container:
             raise ValueError('Container port location already in use in bucket!')
@@ -357,63 +330,47 @@ class Resen():
 
         return True
 
-    # function obsolete?
     def remove_port(self,bucket_name,local):
 
         bucket = self.get_bucket(bucket_name)
 
-        # check if bucket is running
+        # if container has been created, cannot remove port
         if bucket['docker']['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot remove port: %s" % (local))
-            # print("ERROR: Bucket has already been started, cannot remove port: %s" % (local))
-            # return False
 
         # check if port already exists in list of port
         existing_port = [x[0] for x in bucket['docker']['port']]
         try:
-            ind2 = existing_port.index(local)
-            bucket['docker']['port'].pop(ind2)
+            ind = existing_port.index(local)
+            bucket['docker']['port'].pop(ind)
             self.save_config()
         except ValueError:
             raise ValueError("Port location %s not associated with bucket %s" % (local,bucket_name))
-            # print("ERROR: port location %s not associated with bucket %s" % (local,bucket_name))
-            # return False
 
         return True
 
     def add_image(self,bucket_name,docker_image):
+        # rename set_image?
+        # It should be fine to overwrite an existing image if the container hasn't been started yet
         #
         # # TODO: check if "docker_image" is a valid resen-core image
 
         bucket = self.get_bucket(bucket_name)
 
-        # check if bucket is running
+        # if container has been created, cannot change the image
         if bucket['docker']['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot remove port: %s" % (local))
-            # print("ERROR: Bucket has already been started, cannot remove port: %s" % (local))
-            # return False
-
-        # existing_image = bucket['docker']['image']
-        # if not existing_image is None:
-        #     print("ERROR: Image %s was already added to bucket %s" % (existing_image,bucket_name))
-        #     return False
 
         valid_versions = [x['version'] for x in self.valid_cores]
         if not docker_image in valid_versions:
             raise ValueError("Invalid resen-core version %s. Valid version: %s" % (docker_image,', '.join(valid_versions)))
-            # print("ERROR: Invalid resen-core version %s. Valid version: %s" % (docker_image,', '.join(valid_versions)))
-            # return False
 
-        for x in self.valid_cores:
-            if docker_image == x['version']:
-                image = x['version']
-                image_id = x['image_id']
-                pull_image = '%s/%s@%s' % (x['org'],x['repo'],x['repodigest'])
-                break
+        ind = valid_versions.index(docker_image)
+        image = self.valid_cores[ind]
+        bucket['docker']['image'] = image['version']
+        bucket['docker']['image_id'] = image['image_id']
+        bucket['docker']['pull_image'] = '%s/%s@%s' % (image['org'],image['repo'],image['repodigest'])
 
-        bucket['docker']['image'] = image
-        bucket['docker']['image_id'] = image_id
-        bucket['docker']['pull_image'] = pull_image
         self.save_config()
 
         return True
@@ -428,18 +385,14 @@ class Resen():
 
         if bucket['docker']['status'] in ['running']:
             print('Bucket %s is already running!' % (bucket['bucket']['name']))
-            return
+            return True
 
-        # # Make sure we have an image assigned to the bucket
-        # existing_image = bucket['docker']['image']
-        # if existing_image is None:
-        #     print("ERROR: Bucket does not have an image assigned to it.")
-        #     return False
+        # Make sure we have an image assigned to the bucket
         if bucket['docker']['image'] is None:
             raise RuntimeError('Bucket does not have an image assigned to it.')
 
+        # If a container hasn't been created yet, create one
         if bucket['docker']['container'] is None:
-            # no container yet created, so create one
             kwargs = dict()
             kwargs['ports'] = bucket['docker']['port']
             kwargs['storage'] = bucket['docker']['storage']
@@ -449,37 +402,23 @@ class Resen():
             kwargs['pull_image'] = bucket['docker']['pull_image']
             container_id = self.dockerhelper.create_container(**kwargs)
 
-            if container_id is None:
-                raise RuntimeError('Failed to create container!')
-                # print("ERROR: Failed to create container")
-                # return False
-
             bucket['docker']['container'] = container_id
             self.save_config()
 
         self.update_bucket_statuses()
         # Is this second call nessisary?
         bucket = self.get_bucket(bucket_name)
+        # start the container and update status
+        status = self.dockerhelper.start_container(bucket['docker']['container'])
+        bucket['docker']['status'] = status
+        self.save_config()
 
-        # ind = self.bucket_names.index(bucket_name)
-        # bucket = self.buckets[ind]
-
-        # if bucket['docker']['status'] in ['created', 'exited']:
-            # then we can start the container and update status
-        success = self.dockerhelper.start_container(bucket['docker']['container'])
-        if success:
-            bucket['docker']['status'] = 'running'
-            self.save_config()
-            return True
-        else:
-            # this is not terribly helpful - move error into dockerhelper so that more information can be provided?
+        # raise error if bucket did not start sucessfully
+        if status != 'running':
             raise RuntimeError('Failed to start bucket %s' % (bucket['bucket']['name']))
-            # print('ERROR: Failed to start bucket %s' % (bucket['bucket']['name']))
-            # return False
-        # else:
-        #     #contained is already running and we should throw an error
-        #     print('ERROR: Bucket %s is already running!' % (bucket['bucket']['name']))
-        #     return False
+
+        return True
+
 
     def stop_bucket(self,bucket_name):
 
@@ -490,21 +429,16 @@ class Resen():
             print('Bucket %s is not running!' % (bucket['bucket']['name']))
             return
 
-        # if bucket['docker']['status'] in ['running']:
-        # then we can start the container and update status
-        success = self.dockerhelper.stop_container(bucket['docker']['container'])
-        if success:
-            bucket['docker']['status'] = 'exited'
-            self.save_config()
-            return True
-        else:
+        # stop the container and update status
+        status = self.dockerhelper.stop_container(bucket['docker']['container'])
+        bucket['docker']['status'] = status
+        self.save_config()
+
+        if status != 'exited':
             raise RuntimeError('Failed to stop bucket %s' % (bucket['bucket']['name']))
-            # print('ERROR: Failed to stop bucket %s' % (bucket['bucket']['name']))
-            # return False
-        # else:
-        #     #contained is already running and we should throw an error
-        #     print('ERROR: Bucket %s is not running!' % (bucket['bucket']['name']))
-        #     return False
+
+        return True
+
 
     def execute_command(self,bucket_name,command,detach=True):
 
@@ -514,20 +448,21 @@ class Resen():
         if bucket['docker']['status'] not in ['running']:
             raise RuntimeError('Bucket %s is not running!' % (bucket['bucket']['name']))
 
-        # if bucket['docker']['status'] in ['running']:
-        # then we can start the container and update status
+
         result = self.dockerhelper.execute_command(bucket['docker']['container'],command,detach=detach)
         status, output = result
-        if (detach and status is None) or (not detach and status==0):
-            return True
-        else:
+        if (detach and status is not None) or (not detach and status!=0):
             raise RuntimeError('Failed to execute command %s' % (command))
+        #     return True
+        # else:
+        #     raise RuntimeError('Failed to execute command %s' % (command))
             # print('ERROR: Failed to execute command %s' % (command))
             # return False
         # else:
         #     #contained is already running and we should throw an error
         #     print('ERROR: Bucket %s is not running!' % (bucket['bucket']['name']))
         #     return False
+        return True
 
     def start_jupyter(self,bucket_name,local_port,container_port):
 
@@ -548,8 +483,6 @@ class Resen():
         command = command % (container_port, token)
 
         status = self.execute_command(bucket_name,command,detach=True)
-        if status == False:
-            return False
         time.sleep(0.1)
 
         # now check that jupyter is running
@@ -567,10 +500,8 @@ class Resen():
         print("Jupyter lab can be accessed in a browser at: %s" % (url))
         time.sleep(3)
         webbrowser.open(url)
+
         return True
-        # else:
-        #     print("ERROR: Failed to start jupyter server!")
-        #     return False
 
     def stop_jupyter(self,bucket_name):
 
