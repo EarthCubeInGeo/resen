@@ -43,7 +43,7 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
 
         # First, ask user about the bucket they want to create
         # resen-core version?
-        valid_versions = sorted([x['version'] for x in self.program.bucket_manager.valid_cores])
+        valid_versions = sorted([x['version'] for x in self.program.valid_cores])
         print('Please choose a version of resen-core.')
         docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
 
@@ -178,14 +178,14 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         # get bucket name from input
         bucket_name = inputs[0]
 
-        if not bucket_name in self.program.bucket_manager.bucket_names:
+        if not bucket_name in self.program.bucket_names:
             print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
             return False
 
         # get bucket infomrmation (ports and status)
         # This stuff may be better suited to exist in some kind of "status query" inside of Resen.py
-        ind = self.program.bucket_manager.bucket_names.index(bucket_name)
-        bucket = self.program.bucket_manager.buckets[ind]
+        ind = self.program.bucket_names.index(bucket_name)
+        bucket = self.program.buckets[ind]
         # This automatically selects the first port in the list of ports
         # TODO: Manage multiple ports assigned to one bucket
         ports = bucket['docker']['port'][0]
@@ -231,7 +231,7 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
         file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', file=True)
 
         status = self.program.import_bucket(file_name)
-        
+
 #     def do_add_storage(self,args):
 #         """Usage:
 # >>> add_storage bucket_name local_path container_path permissions : Add a local_path storage location available at container_path.
@@ -383,7 +383,7 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
     def get_port(self):
         # this is not atomic, so it is possible that another process might snatch up the port
         port = 9000
-        assigned_ports = [y[0] for x in self.program.bucket_manager.buckets for y in x['docker']['port']]
+        assigned_ports = [y[0] for x in self.program.buckets for y in x['docker']['port']]
 
         while True:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

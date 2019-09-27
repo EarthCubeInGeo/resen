@@ -39,54 +39,29 @@ from .DockerHelper import DockerHelper
 
 
 class Resen():
+
     def __init__(self):
-        self.base_config_dir = self._get_config_dir()
+
+        self.resen_root_dir = self._get_config_dir()
         self.__locked = False
         self.__lock()
 
-        self.bucket_manager = BucketManager(self.base_config_dir)
+        self.dockerhelper = DockerHelper()
+        # load
+        self.load_config()
+        self.valid_cores = self.__get_valid_cores()
+        self.selinux = self.__detect_selinux()
+        ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
+        ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
+        ### mount to an illegal location but the user might.
+        self.storage_whitelist = ['/home/jovyan/mount']
 
-    def create_bucket(self,bucket_name):
-        return self.bucket_manager.create_bucket(bucket_name)
-
-    def list_buckets(self,names_only=False,bucket_name=None):
-        return self.bucket_manager.list_buckets(names_only=names_only,bucket_name=bucket_name)
-
-    def remove_bucket(self,bucket_name):
-        return self.bucket_manager.remove_bucket(bucket_name)
-
-    def add_storage(self,bucket_name,local,container,permissions):
-        return self.bucket_manager.add_storage(bucket_name,local,container,permissions)
-
-    def remove_storage(self,bucket_name,local):
-        return self.bucket_manager.remove_storage(bucket_name,local)
-
-    def add_port(self,bucket_name,local,container,tcp=True):
-        return self.bucket_manager.add_port(bucket_name,local,container,tcp=tcp)
-
-    def remove_port(self,bucket_name,local):
-        return self.bucket_manager.remove_port(bucket_name,local)
-
-    def add_image(self,bucket_name,docker_image):
-        return self.bucket_manager.add_image(bucket_name,docker_image)
-
-    def start_bucket(self,bucket_name):
-        return self.bucket_manager.start_bucket(bucket_name)
-
-    def stop_bucket(self,bucket_name):
-        return self.bucket_manager.stop_bucket(bucket_name)
-
-    def start_jupyter(self,bucket_name,local,container):
-        return self.bucket_manager.start_jupyter(bucket_name,local,container)
-
-    def stop_jupyter(self,bucket_name):
-        return self.bucket_manager.stop_jupyter(bucket_name)
-
-    def export_bucket(self,bucket_name,outfile):
-        return self.bucket_manager.export_bucket(bucket_name,outfile)
-
-    def import_bucket(self, filename):
-        return self.bucket_manager.import_bucket(filename)
+    def __get_valid_cores(self):
+        # TODO: download json file from resen-core github repo
+        #       and if that fails, fallback to hardcoded list
+        return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
+                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},]
 
     def _get_config_dir(self):
         appname = 'resen'
@@ -106,7 +81,7 @@ class Resen():
         return configpath
 
     def __lock(self):
-        self.__lockfile = os.path.join(self.base_config_dir,'lock')
+        self.__lockfile = os.path.join(self.resen_root_dir,'lock')
         if os.path.exists(self.__lockfile):
             raise RuntimeError('Another instance of Resen is already running!')
 
@@ -128,34 +103,6 @@ class Resen():
 
     def __del__(self):
         self.__unlock()
-
-
-# All the bucket stuff
-# TODO: check status of bucket before updating it in case the bucket has changed status since last operation
-class BucketManager():
-# - use a bucket
-#     - how many are allowed to run simultaneously?
-#     - use the bucket how? only through jupyter notebook/lab is Ashton's vote. Terminal provided there
-
-    def __init__(self,resen_root_dir):
-
-        self.resen_root_dir = resen_root_dir
-        self.dockerhelper = DockerHelper()
-        # load
-        self.load_config()
-        self.valid_cores = self.__get_valid_cores()
-        self.selinux = self.__detect_selinux()
-        ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
-        ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
-        ### mount to an illegal location but the user might.
-        self.storage_whitelist = ['/home/jovyan/mount']
-
-    def __get_valid_cores(self):
-        # TODO: download json file from resen-core github repo
-        #       and if that fails, fallback to hardcoded list
-        return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
-                 "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
-                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},]
 
     def load_config(self):
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
