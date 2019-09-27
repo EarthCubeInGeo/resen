@@ -138,15 +138,13 @@ class DockerHelper():
 
     def export_container(self,container_id,filename):
         container = self.get_container(container_id)
-        if container is None:
-            return False
 
         result = container.export()
         with open(filename, 'wb') as f:
             for chunk in result:
                 f.write(chunk)
 
-        return os.path.isfile(filename)
+        return True
 
     def import_image(self,filename,name=None):
         cli = docker.APIClient()

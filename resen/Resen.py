@@ -539,7 +539,11 @@ class Resen():
 
         bucket = self.get_bucket(bucket_name)
         status = self.dockerhelper.export_container(bucket['docker']['container'], outfile)
-        return status
+
+        if not Path(outfile).exists():
+            raise RuntimeError("Export bucket failed! File %s not created.".format(outfile))
+
+        return True
 
     def import_bucket(self,filename):
         # self.dockerhelper.import_image(filename,name='earthcubeingeo/new-image')
