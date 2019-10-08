@@ -59,9 +59,13 @@ class Resen():
     def __get_valid_cores(self):
         # TODO: download json file from resen-core github repo
         #       and if that fails, fallback to hardcoded list
+        # LJL:2019-10-07: Hardcoded in new resen-lite image for testing purposes - not available on docker hub yet
         return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
                  "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
-                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},]
+                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},
+                 {"version":"latest","repo":"resen-lite","org":"earthcubeingeo",
+                  "image_id":'sha256:134707a783d88358bcf4a850cbf602134a26dd6381a41b3af9960b8298f8caf6',
+                  "repodigest":''},]
 
     def _get_config_dir(self):
         appname = 'resen'
@@ -479,7 +483,7 @@ class Resen():
 
 
         token = '%048x' % random.randrange(16**48)
-        command = "bash -cl 'source activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
+        command = "bash -cl 'source /home/jovyan/envs/py36/bin/activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
         command = command % (container_port, token)
 
         status = self.execute_command(bucket_name,command,detach=True)
