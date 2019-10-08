@@ -395,7 +395,7 @@ class Resen():
             return True
 
         # Make sure we have an image assigned to the bucket
-        if bucket['docker']['image'] is None:
+        if bucket['docker']['image_id'] is None:
             raise RuntimeError('Bucket does not have an image assigned to it.')
 
         # If a container hasn't been created yet, create one
@@ -547,6 +547,7 @@ class Resen():
         # Where should all this temporary file creation occur?
         # tar compression - what should we use?
         # some kind of status bar would be useful - this takes a while
+        # Should we include "human readable" metadata?
 
         bucket = self.get_bucket(bucket_name)
 
@@ -585,26 +586,40 @@ class Resen():
 
         return True
 
-    def import_bucket(self,filename):
-        # self.dockerhelper.import_image(filename,name='earthcubeingeo/new-image')
-        # currently just a hard-coded model function - NEEDS WORK
+    def import_bucket(self,bucket_name,filename):
 
-        status = self.create_bucket('new_bucket')
-        print(status)
-        # status = self.add_image('new_bucket','earthcubeingeo/new-image')
-        # print(status)
-        ind = self.bucket_names.index('new_bucket')
-        self.buckets[ind]['docker']['image'] = 'earthcubeingeo/new-image'
-        self.buckets[ind]['docker']['image_id'] = 'sha256:b2ff11cc97eded35057cb680bb048fa78ed3588bd9dfd3de1a168024cfb9b38b'
-        self.buckets[ind]['docker']['pull_image'] = None
-        self.save_config()
-        status = self.add_port('new_bucket',9050,9050,tcp=True)
-        print(status)
+        # Should original tar files be removed after they're extracted?
+        # Where should the bucket mounts be extracted to?
 
-        status = self.start_bucket('new_bucket')
-        print(status)
-        status = self.start_jupyter('new_bucket',9050,9050)
-        print(status)
+
+        # untar bucket file
+        with tarfile.open(filename) as tar:
+            tar.extractall()
+            bucket_dir = Path(filename).parent.joinpath(tar.getnames()[0])
+
+        # read manifest
+        with open(bucket_dir.joinpath('manifest.json'),'r') as f:
+            manifest = json.load(f)
+
+        # create new bucket
+        # status = self.create_bucket(bucket_name)
+        bucket = self.get_bucket(bucket_name)
+
+        # load image
+        image_id = self.dockerhelper.import_image(bucket_dir.joinpath(manifest['image']))
+        # add image to bucket
+        bucket['docker']['image'] = ''
+        bucket['docker']['image_id'] = image_id
+        bucket['docker']['pull_image'] = ''
+
+        # add mounts to bucket
+        for mount in manifest['mounts']:
+            # extract mount from tar file
+            with tarfile.open(bucket_dir.joinpath(mount[0])) as tar:
+                tar.extractall(path=bucket_dir)
+                local = bucket_dir.joinpath(tar.getnames()[0])
+            # add mount to bucket with original container path
+            self.add_storage(bucket_name,local.as_posix(),mount[1],permissions=mount[2])
 
 
 

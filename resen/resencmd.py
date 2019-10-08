@@ -227,10 +227,24 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
         bucket_name = inputs[0]
         status = self.program.export_bucket(bucket_name, file_name)
 
+        # TODO:
+        # Give use option to select which mounts will be included?
+
     def do_import_bucket(self,args):
+        print('Please enter a name for your bucket.')
+        bucket_name = self.get_valid_name('>>> Enter bucket name: ')
+
         file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', file=True)
 
-        status = self.program.import_bucket(file_name)
+        status = self.program.import_bucket(bucket_name, file_name)
+
+        # Figure out a port to use
+        local_port = self.get_port()
+        container_port = local_port
+        self.program.add_port(bucket_name,local_port,container_port,tcp=True)
+
+        # TODO:
+        # Have prompt for user to start bucket automatically?
 
 #     def do_add_storage(self,args):
 #         """Usage:

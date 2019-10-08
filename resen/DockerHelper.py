@@ -162,11 +162,16 @@ class DockerHelper():
         return True
 
     def import_image(self,filename,name=None):
-        cli = docker.APIClient()
-        cli.import_image_from_file(filename,repository=name)
-        # client = docker.from_env()
-        print(self.docker.images.list())
-    # helper functions
+
+        with open(filename, 'rb') as f:
+            image = self.docker.images.load(f)[0]
+
+        # can add tag with image.tag(repository, tag=)
+        # Do we want to? Does this matter?
+        # Images don't NEED tags, but it makes it convenient
+
+        return image.id
+
 
     def get_container_status(self, container_id):
         container = self.get_container(container_id)
