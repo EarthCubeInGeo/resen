@@ -358,6 +358,7 @@ class Resen():
         # It should be fine to overwrite an existing image if the container hasn't been started yet
         #
         # # TODO: check if "docker_image" is a valid resen-core image
+        # would be helpful to save image org and repo as well for export purposes
 
         bucket = self.get_bucket(bucket_name)
 
@@ -541,11 +542,21 @@ class Resen():
 
     def export_bucket(self,bucket_name,outfile):
 
-        bucket = self.get_bucket(bucket_name)
-        status = self.dockerhelper.export_container(bucket['docker']['container'], outfile)
+        # Export procedure
+        # 1. commit -> save new image
+        # 2. tar each individual mount
+        # 3. write metadata file containing how mounts should be set up
+        # 4. create single ouput tar file
+        # 5. clean up/remove intermediate tar files
 
-        if not Path(outfile).exists():
-            raise RuntimeError("Export bucket failed! File %s not created.".format(outfile))
+        bucket = self.get_bucket(bucket_name)
+
+        # export container to image *.tar file
+        status = self.dockerhelper.export_container(bucket['docker']['container'], tag='export', filename='{}_image.tar'.format(bucket_name))
+
+        #
+        # if not Path(outfile).exists():
+        #     raise RuntimeError("Export bucket failed! File %s not created.".format(outfile))
 
         return True
 

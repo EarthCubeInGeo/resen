@@ -15,7 +15,7 @@ class DockerHelper():
         # mounting directory in the container?
         self.container_prefix = 'resen_'
 
-        self.docker = docker.from_env()
+        self.docker = docker.from_env(timeout=300)
 
     def create_container(self,**input_kwargs):
         # TODO: Does container already exist? Does image exist (if not, pull it)?
@@ -136,13 +136,28 @@ class DockerHelper():
         return True
 
 
-    def export_container(self,container_id,filename):
+    def export_container(self,container_id,tag=None, filename=None):
         container = self.get_container(container_id)
 
-        result = container.export()
+        # create new image from container
+        container.commit(repository='earthcubeingeo/resen-lite',tag=tag)
+
+        # save image as *.tar file
+        image_name = 'earthcubeingeo/resen-lite:{}'.format(tag)
+        image = self.docker.images.get(image_name)
+        out = image.save()
         with open(filename, 'wb') as f:
-            for chunk in result:
+            for chunk in out:
                 f.write(chunk)
+
+        # remove image after it has been saved
+        self.docker.images.remove(image_name)
+
+        # TODO:
+        # Add checks that image was sucessfully saved before removing it?
+        # Pass in repository name - currently hard-coded
+        # Repository naming conventions?
+        # Does the tag name matter?
 
         return True
 
