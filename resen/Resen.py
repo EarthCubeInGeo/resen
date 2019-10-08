@@ -34,6 +34,8 @@ import tempfile    # use this to get unique name for docker container
 import webbrowser  # use this to open web browser
 from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
+import tarfile
+import shutil
 
 from .DockerHelper import DockerHelper
 
@@ -542,21 +544,44 @@ class Resen():
 
     def export_bucket(self,bucket_name,outfile):
 
-        # Export procedure
-        # 1. commit -> save new image
-        # 2. tar each individual mount
-        # 3. write metadata file containing how mounts should be set up
-        # 4. create single ouput tar file
-        # 5. clean up/remove intermediate tar files
+        # Where should all this temporary file creation occur?
+        # tar compression - what should we use?
+        # some kind of status bar would be useful - this takes a while
 
         bucket = self.get_bucket(bucket_name)
 
-        # export container to image *.tar file
-        status = self.dockerhelper.export_container(bucket['docker']['container'], tag='export', filename='{}_image.tar'.format(bucket_name))
+        # create temporary directory that will become the final bucket tar file
+        bucket_dir = Path(os.getcwd()).joinpath('resen_{}'.format(bucket_name))
+        os.mkdir(bucket_dir)
 
-        #
-        # if not Path(outfile).exists():
-        #     raise RuntimeError("Export bucket failed! File %s not created.".format(outfile))
+        # initialize manifest
+        manifest = {}
+
+        # export container to image *.tar file
+        image_file_name = '{}_image.tar'.format(bucket_name)
+        status = self.dockerhelper.export_container(bucket['docker']['container'], tag='export', filename=bucket_dir.joinpath(image_file_name))
+        manifest['image'] = image_file_name
+
+        # save all mounts individually as *.tgz files
+        manifest['mounts'] = []
+        for mount in bucket['docker']['storage']:
+            source_dir = Path(mount[0])
+            mount_file_name = '{}_mount.tgz'.format(source_dir.name)
+            with tarfile.open(bucket_dir.joinpath(mount_file_name), "w:gz") as tar:
+                tar.add(source_dir, arcname=source_dir.name)
+
+            manifest['mounts'].append([mount_file_name, mount[1], mount[2]])
+
+        # save manifest file
+        with open(bucket_dir.joinpath('manifest.json'),'w') as f:
+            json.dump(manifest, f)
+
+        # save entire bucket as tgz file
+        with tarfile.open(outfile, 'w:gz') as tar:
+            tar.add(bucket_dir, arcname=bucket_dir.name)
+
+        # remove temporary directory
+        shutil.rmtree(bucket_dir)
 
         return True
 
