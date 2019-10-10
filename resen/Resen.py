@@ -448,6 +448,20 @@ class Resen():
 
         return result
 
+    def set_sudo(self, bucket_name, password='ganimede'):
+        # get bucket
+        bucket = self.get_bucket(bucket_name)
+
+        command = 'echo "jovyan:%s | chpasswd" && adduser jovyan sudo' % password
+        ## NEED SOMETHING ELSE!!!
+        # This sets a password and adds jovyan to the sudo group, but /etc/sudoers still has
+        # %sudo ALL=(ALL:ALL) ALL
+        # commented out, so sudo group can't act as root
+
+        self.execute_command(bucket_name, command)
+
+        return
+
     def start_jupyter(self,bucket_name,local_port=None,container_port=None):
         '''
         Start a jupyter server in the bucket and open a web browser window to a jupyter lab session.  Server will
@@ -558,7 +572,7 @@ class Resen():
         return pid
 
 
-    def export_bucket(self,bucket_name,outfile):
+    def export_bucket(self, bucket_name, outfile, exclude_mounts=[]):
         '''
         Export a bucket
         '''
@@ -588,6 +602,10 @@ class Resen():
         # save all mounts individually as *.tgz files
         manifest['mounts'] = list()
         for mount in bucket['docker']['storage']:
+            # skip mount if it is listed in exclude_mounts
+            if mount[0] in exclude_mounts:
+                continue
+
             source_dir = Path(mount[0])
             mount_file_name = '{}_mount.tgz'.format(source_dir.name)
             with tarfile.open(bucket_dir.joinpath(mount_file_name), "w:gz") as tar:

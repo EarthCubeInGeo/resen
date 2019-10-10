@@ -185,9 +185,24 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
         file_name = self.get_valid_local_path('>>> Enter name for output tgz file: ', file=True)
 
         bucket_name = inputs[0]
+
+        # identify storage locations to exclude
+        exclude_list = []
+        bucket = self.program.get_bucket(bucket_name)
+        print("The following local directories are mounted to the bucket:")
+        for mount in bucket['docker']['storage']:
+            print(mount[0])
+        msg = '>>> Would you like to include all of these in the exported bucket? (y/n): '
+        rsp = self.get_yn(msg)
+        if rsp == 'n':
+            for mount in bucket['docker']['storage']:
+                rsp = self.get_yn(">>> Include %s? (y/n): " % mount[0])
+                if rsp == 'n':
+                    exclude_list.append(mount[0])
+
         try:
             print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
-            self.program.export_bucket(bucket_name, file_name)
+            self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list)
         except (ValueError, RuntimeError) as e:
             print(e)
             return
