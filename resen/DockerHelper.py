@@ -13,39 +13,38 @@ class DockerHelper():
         # need to get information for each resen-core from somewhere.
         # Info like, what internal port needs to be exposed? Where do we get the image from? etc.
         # mounting directory in the container?
+        # What does container.reload() do?  Do we need it?  Where?
         self.container_prefix = 'resen_'
 
         self.docker = docker.from_env(timeout=300)
 
     # def create_container(self,**input_kwargs):
     def create_container(self,bucket):
-        # # TODO: Does container already exist? Does image exist (if not, pull it)?
-        # ports = input_kwargs.get('ports',None)
-        # storage = input_kwargs.get('storage',None)
-        # bucket_name = input_kwargs.get('bucket_name',None)
-        # image_name = input_kwargs.get('image_name',None)
-        # image_id = input_kwargs.get('image_id',None)
-        # pull_image = input_kwargs.get('pull_image',None)
+        '''
+        Create a docker container with the image, mounts, and ports set in this bucket.  If the image
+        does not exist locally, pull it.
+        '''
 
+        # set up basic keyword argument dict
+        kwargs = dict()
+        kwargs['name'] = self.container_prefix + bucket['bucket']['name']
+        kwargs['command'] = 'bash'
+        kwargs['tty'] = True
+        kwargs['ports'] = dict()
 
-        # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
-        create_kwargs = dict()
-        create_kwargs['name'] = self.container_prefix + bucket['bucket']['name']
-        create_kwargs['command'] = 'bash'
-        create_kwargs['tty'] = True
-        create_kwargs['ports'] = dict()
-
+        # if bucket has ports, add these to kwargs
         for host, container, tcp in bucket['docker']['port']:
             if tcp:
                 key = '%s/tcp' % (container)
             else:
                 key = '%s/udp' % (container)
-            create_kwargs['ports'][key] = host
+            kwargs['ports'][key] = host
 
+        # if bucket has mounts, add these to kwargs
         create_kwargs['volumes'] = dict()
         for host, container, permissions in bucket['docker']['storage']:
             temp = {'bind': container, 'mode': permissions}
-            create_kwargs['volumes'][host] = temp
+            kwargs['volumes'][host] = temp
 
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
@@ -59,11 +58,57 @@ class DockerHelper():
             image.tag(repo, tag=bucket['docker']['image'])
             print("Done!")
 
-        container = self.docker.containers.create(bucket['docker']['image_id'],**create_kwargs)
+        # start the container
+        container = self.docker.containers.create(bucket['docker']['image_id'],**kwargs)
 
         return container.id, container.status
 
+
+    def remove_container(self,bucket):
+        '''
+        Remove the container associated with the provided bucket.
+        '''
+        container = self.docker.containers.get(bucket['docker']['container'])
+        container.remove()
+        return
+
+
+    def start_container(self, bucket):
+        '''
+        Start a container.
+        '''
+        # need to check if bucket config has changed since last run
+        container = self.docker.containers.get(bucket['docker']['container'])
+        container.start()   # this does nothing if already started
+        container.reload()
+        time.sleep(0.1)
+        return container.status
+
+
+    def stop_container(self,bucket):
+        '''
+        Stop a container.
+        '''
+        container = self.docker.containers.get(bucket['docker']['container'])
+        container.stop()    # this does nothing if already stopped
+        container.reload()
+        time.sleep(0.1)
+        return container.status
+
+
+    def execute_command(self,bucket,command,detach=True):
+        '''
+        Execute a command in a container.  Returns the exit code and output
+        '''
+        container = self.docker.containers.get(bucket['docker']['container'])
+        result = container.exec_run(command,detach=detach)
+        return result.exit_code, result.output
+
+
     def stream_pull_image(self,pull_image):
+        '''
+        Pull image from dockerhub.
+        '''
         import datetime
         # time formatting
         def truncate_secs(delta_time, fmt=":%.2d"):
@@ -107,42 +152,19 @@ class DockerHelper():
 
         print() # to avoid erasing the progress bar at the end
 
-        return True
-
-    def start_container(self, bucket):
-        # need to check if bucket config has changed since last run
-        # container = self.get_container(bucket['docker']['container'])
-        container = self.docker.containers.get(bucket['docker']['container'])
-        container.start()   # this does nothing if already started
-        container.reload()
-        time.sleep(0.1)
-        return container.status
-
-
-    def execute_command(self,bucket,command,detach=True):
-        # container = self.get_container(bucket['docker']['container'])
-        container = self.docker.containers.get(bucket['docker']['container'])
-        result = container.exec_run(command,detach=detach)
-        return result.exit_code, result.output
-
-
-    def stop_container(self,bucket):
-        # container = self.get_container(bucket['docker']['container'])
-        container = self.docker.containers.get(bucket['docker']['container'])
-        container.stop()    # this does nothing if already stopped
-        container.reload()
-        time.sleep(0.1)
-        return container.status
-
-    def remove_container(self,bucket):
-        # container = self.get_container(bucket['docker']['container'])
-        container = self.docker.containers.get(bucket['docker']['container'])
-        container.remove()
-        return True
-
+        return
 
     def export_container(self,bucket,tag=None, filename=None):
-        # container = self.get_container(bucket['docker']['container'])
+        '''
+        Export existing container to a tared image file.  After tar file has been created, image of container is removed.
+        '''
+
+        # TODO:
+        # Add checks that image was sucessfully saved before removing it?
+        # Pass in repository name - currently hard-coded
+        # Repository naming conventions?
+        # Does the tag name matter?
+
         container = self.docker.containers.get(bucket['docker']['container'])
 
         # create new image from container
@@ -159,30 +181,27 @@ class DockerHelper():
         # remove image after it has been saved
         self.docker.images.remove(image_name)
 
-        # TODO:
-        # Add checks that image was sucessfully saved before removing it?
-        # Pass in repository name - currently hard-coded
-        # Repository naming conventions?
-        # Does the tag name matter?
-
-        return True
+        return
 
     def import_image(self,filename,name=None):
-
-        with open(filename, 'rb') as f:
-            image = self.docker.images.load(f)[0]
+        '''
+        Import an image from a tar file.  Return the image ID.
+        '''
 
         # can add tag with image.tag(repository, tag=)
         # Do we want to? Does this matter?
         # Images don't NEED tags, but it makes it convenient
 
+        with open(filename, 'rb') as f:
+            image = self.docker.images.load(f)[0]
+
         return image.id
 
 
     def get_container_status(self, bucket):
-        # container = self.get_container(container_id)
-        # if container is None:
-        #     return False
+        '''
+        Get the status of a particular container.
+        '''
         container = self.docker.containers.get(bucket['docker']['container'])
         container.reload()  # maybe redundant
 
