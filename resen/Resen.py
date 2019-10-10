@@ -44,6 +44,7 @@ from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
 import tarfile
 import shutil
+import socket
 
 from .DockerHelper import DockerHelper
 
@@ -287,7 +288,7 @@ class Resen():
         return
 
 
-    def add_port(self,bucket_name,local,container,tcp=True):
+    def add_port(self,bucket_name,local=None,container=None,tcp=True):
         '''
         Add a port to the bucket
         '''
@@ -298,25 +299,33 @@ class Resen():
         if bucket['docker']['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot add port: %s" % (local))
 
-        # check if local/container port already exists in list of ports
-        existing_local = [x[0] for x in bucket['docker']['port']]
-        if local in existing_local:
-            raise ValueError('Local port location already in use in bucket!')
-        existing_container = [x[1] for x in bucket['docker']['port']]
-        if container in existing_container:
-            raise ValueError('Container port location already in use in bucket!')
+        if not local and not container:
+            # this is not atomic, so it is possible that another process might snatch up the port
+            local = self.get_port()
+            container = local
 
-        # TODO: check if port location exists on host
+        else:
+            # check if local/container port already exists in list of ports
+            existing_local = [x[0] for x in bucket['docker']['port']]
+            if local in existing_local:
+                raise ValueError('Local port location already in use in bucket!')
+            existing_container = [x[1] for x in bucket['docker']['port']]
+            if container in existing_container:
+                raise ValueError('Container port location already in use in bucket!')
 
-        # check if port avaiable on host (from https://stackoverflow.com/questions/2470971/fast-way-to-test-if-a-port-is-in-use-using-python)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(('localhost', local)):
-                raise RuntimeError("Port %s in use and cannot be assigned to bucket" % local)
+            # TODO: check if port location exists on host - maybe not?  If usuer manually assigns port, ok to trust they know what they're doing?
+            # check if port avaiable on host (from https://stackoverflow.com/questions/2470971/fast-way-to-test-if-a-port-is-in-use-using-python)
+            # DOESN'T WORK - LOOK INTO THIS MORE LATER
+            # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            #     print(s.connect_ex(('localhost', local)))
+            #     if s.connect_ex(('localhost', local)):
+            #         raise RuntimeError("Port %s in use and cannot be assigned to bucket" % local)
 
         bucket['docker']['port'].append([local,container,tcp])
         self.save_config()
 
         return
+
 
     def remove_port(self,bucket_name,local):
         '''
@@ -342,6 +351,19 @@ class Resen():
 
         return
 
+    def get_port(self):
+        # this is not atomic, so it is possible that another process might snatch up the port
+        port = 9000
+        assigned_ports = [y[0] for x in self.buckets for y in x['docker']['port']]
+
+        while True:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                assigned = s.connect_ex(('localhost', port)) == 0
+            if not assigned and not port in assigned_ports:
+                return port
+            else:
+                port += 1
+
 
     def start_bucket(self,bucket_name):
         '''
@@ -352,7 +374,7 @@ class Resen():
 
         # if bucket is already running, do nothing
         if bucket['docker']['status'] in ['running']:
-            print('Bucket %s is already running!' % (bucket['bucket']['name']))
+            # print('Bucket %s is already running!' % (bucket['bucket']['name']))
             return
 
         # Make sure we have an image assigned to the bucket
@@ -392,7 +414,7 @@ class Resen():
 
         # if bucket is already stopped, do nothing
         if bucket['docker']['status'] in ['created', 'exited']:
-            print('Bucket %s is not running!' % (bucket['bucket']['name']))
+            # print('Bucket %s is not running!' % (bucket['bucket']['name']))
             return
 
         # stop the container and update status
@@ -426,7 +448,7 @@ class Resen():
 
         return result
 
-    def start_jupyter(self,bucket_name,local_port,container_port):
+    def start_jupyter(self,bucket_name,local_port=None,container_port=None):
         '''
         Start a jupyter server in the bucket and open a web browser window to a jupyter lab session.  Server will
         use the specified local and container ports (ports must be a matched pair!)
@@ -448,6 +470,11 @@ class Resen():
             url = 'http://localhost:%s/?token=%s' % (port,token)
             print("Jupyter lab is already running and can be accessed in a browser at: %s" % (url))
             return
+
+        # if ports are not specified, use the first port set from the bucket
+        if not local_port and not container_port:
+            local_port = bucket['docker']['port'][0][0]
+            container_port = bucket['docker']['port'][0][1]
 
         # set a random token and form
         token = '%048x' % random.randrange(16**48)
@@ -499,7 +526,7 @@ class Resen():
         command = "bash -cl '/home/jovyan/envs/py36/bin/python -c \"%s \"'" % (python_cmd)
         status = self.execute_command(bucket_name,command,detach=False)
 
-        self.update_bucket_statuses() # Nessisary?
+        # self.update_bucket_statuses() # Nessisary?
 
         # now verify it is dead
         pid = self.get_jupyter_pid(bucket_name)
@@ -540,6 +567,8 @@ class Resen():
         # some kind of status bar would be useful - this takes a while
         # Should we include "human readable" metadata?
         # let users select specific mounts to include
+        # check size of mounts
+        # check harddrive space for commit
 
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -597,7 +626,7 @@ class Resen():
             manifest = json.load(f)
 
         # create new bucket
-        # status = self.create_bucket(bucket_name)
+        self.create_bucket(bucket_name)
         bucket = self.get_bucket(bucket_name)
 
         # load image

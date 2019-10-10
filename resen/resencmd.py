@@ -48,10 +48,6 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
         docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
 
 
-        # Figure out a port to use
-        local_port = self.get_port()
-        container_port = local_port
-
         # Mounting persistent storage
         msg =  'Local directories can be mounted to /home/jovyan/mount in a bucket.  '
         msg += 'You can specify either r or rw privileges  for each directory mounted.  '
@@ -74,56 +70,27 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
         msg = '>>> Start bucket and jupyterlab? (y/n): '
         start = self.get_yn(msg) == 'y'
 
-        success = True
-        print("...adding core...")
-        status = self.program.add_image(bucket_name,docker_image)
-        success = success and status
-        if status:
-            status = self.program.add_port(bucket_name,local_port,container_port,tcp=True)
-            success = success and status
-            if status:
-                print("...adding mounts...")
-                for mount in mounts:
-                    status = self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
-                    success = success and status
-                    if not status:
-                        print("    Failed to mount storage!")
-
-        if success:
+        try:
+            self.program.create_bucket(bucket_name)
+            print("...adding core...")
+            self.program.set_image(bucket_name,docker_image)
+            print("...adding ports...")
+            self.program.add_port(bucket_name)
+            print("...adding mounts...")
+            for mount in mounts:
+                self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
             print("Bucket created successfully!")
-            if start:
-                # start bucket
-                status = self.program.start_bucket(bucket_name)
-                if not status:
-                    return
-                # start jupyterlab
-                print("...starting jupyterlab...")
-                status = self.program.start_jupyter(bucket_name,local_port,container_port)
-        else:
-            print("Failed to create bucket!")
-            status = self.program.remove_bucket(bucket_name)
+        except Exception as e:
+            print("Bucket creation failed!")
+            print(e)
+            return
 
-#     def do_start_bucket(self,args):
-#         """Usage:
-# start_bucket bucket_name : Start bucket named bucket_name."""
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 1:
-#             print("Syntax Error. Usage: start_bucket bucket_name")
-#             return
+        if start:
+            # start bucket
+            self.program.start_bucket(bucket_name)
+            print("...starting jupyterlab...")
+            self.program.start_jupyter(bucket_name)
 
-#         bucket_name = inputs[0]
-#         status = self.program.start_bucket(bucket_name)
-
-#     def do_stop_bucket(self,args):
-#         """Usage:
-# stop_bucket bucket_name : Stop bucket named bucket_name."""
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 1:
-#             print("Syntax Error. Usage: stop_bucket bucket_name")
-#             return
-
-#         bucket_name = inputs[0]
-#         status = self.program.stop_bucket(bucket_name)
 
     def do_remove_bucket(self,args):
         """Usage:
@@ -134,7 +101,11 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
             return
 
         bucket_name = inputs[0]
-        status = self.program.remove_bucket(bucket_name)
+        try:
+            self.program.remove_bucket(bucket_name)
+        except (ValueError, RuntimeError) as e:
+            print(e)
+            return
 
     def do_status(self,args):
         """Usage:
@@ -178,28 +149,12 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
         # get bucket name from input
         bucket_name = inputs[0]
 
-        if not bucket_name in self.program.bucket_names:
-            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
-            return False
-
-        # get bucket infomrmation (ports and status)
-        # This stuff may be better suited to exist in some kind of "status query" inside of Resen.py
-        ind = self.program.bucket_names.index(bucket_name)
-        bucket = self.program.buckets[ind]
-        # This automatically selects the first port in the list of ports
-        # TODO: Manage multiple ports assigned to one bucket
-        ports = bucket['docker']['port'][0]
-        running_status = bucket['docker']['status']
-
-
-        # if bucket is not running, first start bucket
-        if running_status != 'running':
-            status = self.program.start_bucket(bucket_name)
-
-        # check if jupyter server running
-
-        # then start jupyter
-        status = self.program.start_jupyter(bucket_name,ports[0],ports[1])
+        try:
+            self.program.start_bucket(bucket_name) # does nothing if bucket already started
+            self.program.start_jupyter(bucket_name)
+        except (ValueError, RuntimeError) as e:
+            print(e)
+            return
 
 
     def do_stop_jupyter(self,args):
@@ -211,8 +166,13 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
             return
 
         bucket_name = inputs[0]
-        status = self.program.stop_jupyter(bucket_name)
-        status = self.program.stop_bucket(bucket_name)
+        try:
+            self.program.stop_jupyter(bucket_name)
+            self.program.stop_bucket(bucket_name)
+        except (ValueError, RuntimeError) as e:
+            print(e)
+            return
+
 
     def do_export_bucket(self,args):
         """Usage:
@@ -222,29 +182,86 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
             print("Syntax Error. Usage: export_bucket bucket_name")
             return
 
-        file_name = self.get_valid_local_path('>>> Enter name for output tar file: ', file=True)
+        file_name = self.get_valid_local_path('>>> Enter name for output tgz file: ', file=True)
 
         bucket_name = inputs[0]
-        status = self.program.export_bucket(bucket_name, file_name)
+        try:
+            print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
+            self.program.export_bucket(bucket_name, file_name)
+        except (ValueError, RuntimeError) as e:
+            print(e)
+            return
 
         # TODO:
         # Give use option to select which mounts will be included?
 
     def do_import_bucket(self,args):
+        """Usage:
+import_bucket : Import a bucket from a .tgz file by providing input."""
         print('Please enter a name for your bucket.')
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
         file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', file=True)
 
-        status = self.program.import_bucket(bucket_name, file_name)
-
-        # Figure out a port to use
-        local_port = self.get_port()
-        container_port = local_port
-        self.program.add_port(bucket_name,local_port,container_port,tcp=True)
+        try:
+            self.program.import_bucket(bucket_name, file_name)
+            self.program.add_port(bucket_name)
+        except (ValueError, RuntimeError) as e:
+            print(e)
+            return
 
         # TODO:
         # Have prompt for user to start bucket automatically?
+        # success = True
+        # print("...adding core...")
+        # status = self.program.add_image(bucket_name,docker_image)
+        # success = success and status
+        # if status:
+        #     status = self.program.add_port(bucket_name,local_port,container_port,tcp=True)
+        #     success = success and status
+        #     if status:
+        #         print("...adding mounts...")
+        #         for mount in mounts:
+        #             status = self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
+        #             success = success and status
+        #             if not status:
+        #                 print("    Failed to mount storage!")
+
+        # if success:
+        #     print("Bucket created successfully!")
+        #     if start:
+        #         # start bucket
+        #         status = self.program.start_bucket(bucket_name)
+        #         if not status:
+        #             return
+        #         # start jupyterlab
+        #         print("...starting jupyterlab...")
+        #         status = self.program.start_jupyter(bucket_name,local_port,container_port)
+        # else:
+        #     print("Failed to create bucket!")
+        #     status = self.program.remove_bucket(bucket_name)
+
+#     def do_start_bucket(self,args):
+#         """Usage:
+# start_bucket bucket_name : Start bucket named bucket_name."""
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 1:
+#             print("Syntax Error. Usage: start_bucket bucket_name")
+#             return
+
+#         bucket_name = inputs[0]
+#         status = self.program.start_bucket(bucket_name)
+
+#     def do_stop_bucket(self,args):
+#         """Usage:
+# stop_bucket bucket_name : Stop bucket named bucket_name."""
+#         inputs,num_inputs = self.parse_args(args)
+#         if num_inputs != 1:
+#             print("Syntax Error. Usage: stop_bucket bucket_name")
+#             return
+
+#         bucket_name = inputs[0]
+#         status = self.program.stop_bucket(bucket_name)
 
 #     def do_add_storage(self,args):
 #         """Usage:
@@ -375,14 +392,11 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
                 print("Bucket names must be less than 20 characters.")
             elif not name[0].isalpha():
                 print("Bucket names must start with an alphabetic character.")
+            elif name in self.program.bucket_names:
+                print("Cannot use the same name as an existing bucket!")
             else:
-                # check if bucket with that name already exists
-                # Is the only reason create_bucket fails if the name is already take?  May need a more rigerous check
-                status = self.program.create_bucket(name)
-                if status:
-                    return name
-                else:
-                    print("Cannot use the same name as an existing bucket!")
+                return name
+
 
     def get_valid_version(self,msg,valid_versions):
         print('Available versions: {}'.format(", ".join(valid_versions)))
@@ -393,19 +407,6 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
             else:
                 print("Invalid version. Available versions: {}".format(", ".join(valid_versions)))
 
-
-    def get_port(self):
-        # this is not atomic, so it is possible that another process might snatch up the port
-        port = 9000
-        assigned_ports = [y[0] for x in self.program.buckets for y in x['docker']['port']]
-
-        while True:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                assigned = s.connect_ex(('localhost', port)) == 0
-            if not assigned and not port in assigned_ports:
-                return port
-            else:
-                port += 1
 
     def get_valid_local_path(self,msg,file=False):
         while True:

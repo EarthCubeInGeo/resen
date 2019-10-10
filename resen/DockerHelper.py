@@ -41,7 +41,7 @@ class DockerHelper():
             kwargs['ports'][key] = host
 
         # if bucket has mounts, add these to kwargs
-        create_kwargs['volumes'] = dict()
+        kwargs['volumes'] = dict()
         for host, container, permissions in bucket['docker']['storage']:
             temp = {'bind': container, 'mode': permissions}
             kwargs['volumes'][host] = temp
