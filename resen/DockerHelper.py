@@ -17,24 +17,25 @@ class DockerHelper():
 
         self.docker = docker.from_env(timeout=300)
 
-    def create_container(self,**input_kwargs):
-        # TODO: Does container already exist? Does image exist (if not, pull it)?
-        ports = input_kwargs.get('ports',None)
-        storage = input_kwargs.get('storage',None)
-        bucket_name = input_kwargs.get('bucket_name',None)
-        image_name = input_kwargs.get('image_name',None)
-        image_id = input_kwargs.get('image_id',None)
-        pull_image = input_kwargs.get('pull_image',None)
+    # def create_container(self,**input_kwargs):
+    def create_container(self,bucket):
+        # # TODO: Does container already exist? Does image exist (if not, pull it)?
+        # ports = input_kwargs.get('ports',None)
+        # storage = input_kwargs.get('storage',None)
+        # bucket_name = input_kwargs.get('bucket_name',None)
+        # image_name = input_kwargs.get('image_name',None)
+        # image_id = input_kwargs.get('image_id',None)
+        # pull_image = input_kwargs.get('pull_image',None)
 
 
         # TODO: jupyterlab or jupyter notebook, pass ports, mount volumes, generate token for lab/notebook server
         create_kwargs = dict()
-        create_kwargs['name'] = self.container_prefix + bucket_name
+        create_kwargs['name'] = self.container_prefix + bucket['bucket']['name']
         create_kwargs['command'] = 'bash'
         create_kwargs['tty'] = True
         create_kwargs['ports'] = dict()
 
-        for host, container, tcp in ports:
+        for host, container, tcp in bucket['docker']['port']:
             if tcp:
                 key = '%s/tcp' % (container)
             else:
@@ -42,25 +43,25 @@ class DockerHelper():
             create_kwargs['ports'][key] = host
 
         create_kwargs['volumes'] = dict()
-        for host, container, permissions in storage:
+        for host, container, permissions in bucket['docker']['storage']:
             temp = {'bind': container, 'mode': permissions}
             create_kwargs['volumes'][host] = temp
 
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
-        if image_id not in local_image_ids:
-            print("Pulling image: %s" % image_name)
+        if bucket['docker']['image_id'] not in local_image_ids:
+            print("Pulling image: %s" % bucket['docker']['image'])
             print("   This may take some time...")
-            status = self.stream_pull_image(pull_image)
-            image = self.docker.images.get(pull_image)
+            status = self.stream_pull_image(bucket['docker']['pull_image'])
+            image = self.docker.images.get(bucket['docker']['pull_image'])
             repo,digest = pull_image.split('@')
             # When pulling from repodigest sha256 no tag is assigned. So:
-            image.tag(repo, tag=image_name)
+            image.tag(repo, tag=bucket['docker']['image'])
             print("Done!")
 
-        container_id = self.docker.containers.create(image_id,**create_kwargs)
+        container = self.docker.containers.create(bucket['docker']['image_id'],**create_kwargs)
 
-        return container_id.id
+        return container.id, container.status
 
     def stream_pull_image(self,pull_image):
         import datetime
@@ -108,36 +109,41 @@ class DockerHelper():
 
         return True
 
-    def start_container(self, container_id):
+    def start_container(self, bucket):
         # need to check if bucket config has changed since last run
-        container = self.get_container(container_id)
+        # container = self.get_container(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['docker']['container'])
         container.start()   # this does nothing if already started
         container.reload()
         time.sleep(0.1)
         return container.status
 
 
-    def execute_command(self,container_id,command,detach=True):
-        container = self.get_container(container_id)
+    def execute_command(self,bucket,command,detach=True):
+        # container = self.get_container(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['docker']['container'])
         result = container.exec_run(command,detach=detach)
         return result.exit_code, result.output
 
 
-    def stop_container(self,container_id):
-        container = self.get_container(container_id)
+    def stop_container(self,bucket):
+        # container = self.get_container(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['docker']['container'])
         container.stop()    # this does nothing if already stopped
         container.reload()
         time.sleep(0.1)
         return container.status
 
-    def remove_container(self,container_id):
-        container = self.get_container(container_id)
+    def remove_container(self,bucket):
+        # container = self.get_container(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['docker']['container'])
         container.remove()
         return True
 
 
-    def export_container(self,container_id,tag=None, filename=None):
-        container = self.get_container(container_id)
+    def export_container(self,bucket,tag=None, filename=None):
+        # container = self.get_container(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['docker']['container'])
 
         # create new image from container
         container.commit(repository='earthcubeingeo/resen-lite',tag=tag)
@@ -173,19 +179,20 @@ class DockerHelper():
         return image.id
 
 
-    def get_container_status(self, container_id):
-        container = self.get_container(container_id)
-        if container is None:
-            return False
+    def get_container_status(self, bucket):
+        # container = self.get_container(container_id)
+        # if container is None:
+        #     return False
+        container = self.docker.containers.get(bucket['docker']['container'])
         container.reload()  # maybe redundant
 
         return container.status
 
-    # get a container object given a container id
-    def get_container(self,container_id):
-        try:
-            container = self.docker.containers.get(container_id)
-            return container
-        except docker.errors.NotFound:
-            print("ERROR: No such container: %s" % container_id)
-            return None
+    # # get a container object given a container id
+    # def get_container(self,container_id):
+    #     try:
+    #         container = self.docker.containers.get(container_id)
+    #         return container
+    #     except docker.errors.NotFound:
+    #         print("ERROR: No such container: %s" % container_id)
+    #         return None

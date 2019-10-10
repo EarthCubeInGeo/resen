@@ -210,7 +210,8 @@ class Resen():
         # if docker container created, remove it first
         if bucket['docker']['status'] in ['created','exited'] and bucket['docker']['container'] is not None:
             # then we can remove container and update status
-            success = self.dockerhelper.remove_container(bucket['docker']['container'])
+            # success = self.dockerhelper.remove_container(bucket['docker']['container'])
+            success = self.dockerhelper.remove_container(bucket)
             bucket['docker']['status'] = None
             bucket['docker']['container'] = None
             self.save_config()
@@ -400,23 +401,25 @@ class Resen():
 
         # If a container hasn't been created yet, create one
         if bucket['docker']['container'] is None:
-            kwargs = dict()
-            kwargs['ports'] = bucket['docker']['port']
-            kwargs['storage'] = bucket['docker']['storage']
-            kwargs['bucket_name'] = bucket['bucket']['name']
-            kwargs['image_name'] = bucket['docker']['image']
-            kwargs['image_id'] = bucket['docker']['image_id']
-            kwargs['pull_image'] = bucket['docker']['pull_image']
-            container_id = self.dockerhelper.create_container(**kwargs)
+            # kwargs = dict()
+            # kwargs['ports'] = bucket['docker']['port']
+            # kwargs['storage'] = bucket['docker']['storage']
+            # kwargs['bucket_name'] = bucket['bucket']['name']
+            # kwargs['image_name'] = bucket['docker']['image']
+            # kwargs['image_id'] = bucket['docker']['image_id']
+            # kwargs['pull_image'] = bucket['docker']['pull_image']
+            # container_id = self.dockerhelper.create_container(**kwargs)
 
+            container_id, status = self.dockerhelper.create_container(bucket)
             bucket['docker']['container'] = container_id
+            bucket['docker']['status'] = status
             self.save_config()
 
         self.update_bucket_statuses()
         # Is this second call nessisary?
         bucket = self.get_bucket(bucket_name)
         # start the container and update status
-        status = self.dockerhelper.start_container(bucket['docker']['container'])
+        status = self.dockerhelper.start_container(bucket)
         bucket['docker']['status'] = status
         self.save_config()
 
@@ -437,7 +440,7 @@ class Resen():
             return
 
         # stop the container and update status
-        status = self.dockerhelper.stop_container(bucket['docker']['container'])
+        status = self.dockerhelper.stop_container(bucket)
         bucket['docker']['status'] = status
         self.save_config()
 
@@ -456,9 +459,9 @@ class Resen():
             raise RuntimeError('Bucket %s is not running!' % (bucket['bucket']['name']))
 
 
-        result = self.dockerhelper.execute_command(bucket['docker']['container'],command,detach=detach)
-        status, output = result
-        if (detach and status is not None) or (not detach and status!=0):
+        result = self.dockerhelper.execute_command(bucket,command,detach=detach)
+        code, output = result
+        if (detach and code is not None) or (not detach and code!=0):
             raise RuntimeError('Failed to execute command %s' % (command))
         #     return True
         # else:
@@ -469,12 +472,13 @@ class Resen():
         #     #contained is already running and we should throw an error
         #     print('ERROR: Bucket %s is not running!' % (bucket['bucket']['name']))
         #     return False
-        return True
+        return result
 
     def start_jupyter(self,bucket_name,local_port,container_port):
 
         bucket = self.get_bucket(bucket_name)
-        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        # pid = self.get_jupyter_pid(bucket['docker']['container'])
+        pid = self.get_jupyter_pid(bucket_name)
 
         if not pid is None:
             port = bucket['docker']['jupyter']['port']
@@ -489,12 +493,14 @@ class Resen():
         command = "bash -cl 'source /home/jovyan/envs/py36/bin/activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
         command = command % (container_port, token)
 
-        status = self.execute_command(bucket_name,command,detach=True)
+        # status = self.execute_command(bucket_name,command,detach=True)
+        self.execute_command(bucket_name,command,detach=True)
         time.sleep(0.1)
 
         # now check that jupyter is running
         self.update_bucket_statuses()
-        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        # pid = self.get_jupyter_pid(bucket['docker']['container'])
+        pid = self.get_jupyter_pid(bucket_name)
 
         if pid is None:
             raise RuntimeError("Failed to start jupyter server!")
@@ -516,7 +522,8 @@ class Resen():
         if not bucket['docker']['status'] in ['running']:
             return True
 
-        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        # pid = self.get_jupyter_pid(bucket['docker']['container'])
+        pid = self.get_jupyter_pid(bucket_name)
         if pid is None:
             return True
 
@@ -530,7 +537,8 @@ class Resen():
         self.update_bucket_statuses()
 
         # now verify it is dead
-        pid = self.get_jupyter_pid(bucket['docker']['container'])
+        # pid = self.get_jupyter_pid(bucket['docker']['container'])
+        pid = self.get_jupyter_pid(bucket_name)
         if not pid is None:
             raise RuntimeError("Failed to stop jupyter lab.")
             # print("ERROR: Failed to stop jupyter lab.")
@@ -560,7 +568,7 @@ class Resen():
 
         # export container to image *.tar file
         image_file_name = '{}_image.tar'.format(bucket_name)
-        status = self.dockerhelper.export_container(bucket['docker']['container'], tag='export', filename=bucket_dir.joinpath(image_file_name))
+        status = self.dockerhelper.export_container(bucket, tag='export', filename=bucket_dir.joinpath(image_file_name))
         manifest['image'] = image_file_name
 
         # save all mounts individually as *.tgz files
@@ -588,6 +596,8 @@ class Resen():
 
     def import_bucket(self,bucket_name,filename):
 
+        # Note: this ONLY extracts the image and mounts and sets up the bucket with the appropriate mounts and image
+        # Ports NOT assigned (these should be selected based on new local computer) and container NOT created/started
         # Should original tar files be removed after they're extracted?
         # Where should the bucket mounts be extracted to?
 
@@ -624,13 +634,15 @@ class Resen():
 
 
 
-    def get_jupyter_pid(self,container):
+    def get_jupyter_pid(self,bucket_name):
 
-        result = self.dockerhelper.execute_command(container,'ps -ef',detach=False)
-        if result == False:
-            return None
+        code, output = self.execute_command(bucket_name, 'ps -ef', detach=False)
+        # result = self.dockerhelper.execute_command(container,'ps -ef',detach=False)
+        # if result == False:
+        #     return None
 
-        output = result[1].decode('utf-8').split('\n')
+        # output = result[1].decode('utf-8').split('\n')
+        output = output.decode('utf-8').split('\n')
 
         pid = None
         for line in output:
@@ -642,23 +654,29 @@ class Resen():
         return pid
 
     def update_bucket_statuses(self):
-        for i,bucket in enumerate(self.buckets):
-            container_id = bucket['docker']['container']
-            if container_id is None:
+        # for i,bucket in enumerate(self.buckets):
+        for bucket in self.buckets:
+            # container_id = bucket['docker']['container']
+            # if container_id is None:
+            #     continue
+
+            if bucket['docker']['container'] is None:
                 continue
 
-            status = self.dockerhelper.get_container_status(container_id)
-            if status:
-                self.buckets[i]['docker']['status'] = status
-                self.save_config()
+            status = self.dockerhelper.get_container_status(bucket)
+            bucket['docker']['status'] = status
+            self.save_config()
+            # if status:
+            #     self.buckets[i]['docker']['status'] = status
+            #     self.save_config()
 
-    def get_container(self,bucket_name):
-        if not bucket_name in self.bucket_names:
-            print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
-            return False
-
-        ind = self.bucket_names.index(bucket_name)
-        return self.buckets[ind]['docker']['container']
+    # def get_container(self,bucket_name):
+    #     if not bucket_name in self.bucket_names:
+    #         print("ERROR: Bucket with name: %s does not exist!" % bucket_name)
+    #         return False
+    #
+    #     ind = self.bucket_names.index(bucket_name)
+    #     return self.buckets[ind]['docker']['container']
 
     def __detect_selinux(self):
         try:
