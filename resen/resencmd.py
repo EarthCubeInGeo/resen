@@ -186,19 +186,21 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
 
         bucket_name = inputs[0]
 
+        report = self.program.bucket_diskspace(bucket_name)
+
         # identify storage locations to exclude
         exclude_list = []
-        bucket = self.program.get_bucket(bucket_name)
-        print("The following local directories are mounted to the bucket:")
-        for mount in bucket['docker']['storage']:
-            print(mount[0])
-        msg = '>>> Would you like to include all of these in the exported bucket? (y/n): '
-        rsp = self.get_yn(msg)
-        if rsp == 'n':
-            for mount in bucket['docker']['storage']:
-                rsp = self.get_yn(">>> Include %s? (y/n): " % mount[0])
-                if rsp == 'n':
-                    exclude_list.append(mount[0])
+        if len(report['storage']) > 0:
+            print("The following local directories are mounted to the bucket (total %s MB):" % int(report['total_storage']))
+            for mount in report['storage']:
+                print(mount['local'])
+            msg = '>>> Would you like to include all of these in the exported bucket? (y/n): '
+            rsp = self.get_yn(msg)
+            if rsp == 'n':
+                for mount in report['storage']:
+                    rsp = self.get_yn(">>> Include %s [%s MB]? (y/n): " % (mount['local'],mount['size']))
+                    if rsp == 'n':
+                        exclude_list.append(mount['local'])
 
         try:
             print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
@@ -207,8 +209,6 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
             print(e)
             return
 
-        # TODO:
-        # Give use option to select which mounts will be included?
 
     def do_import_bucket(self,args):
         """Usage:

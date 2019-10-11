@@ -594,6 +594,14 @@ class Resen():
         # initialize manifest
         manifest = dict()
 
+        # # find container size and determine if there's enough disk space for the export
+        # # need to figure out a way to get the virtual size of a container with docker-py
+        # this code should probably go in the bucket_diskspace() method
+        # container_size = self.dockerhelper.get_container_size(bucket)
+        # disk_space =
+        # if disk_space < container_size*3:
+        #     raise RuntimeError("Not enough disk space for image export!")
+
         # export container to image *.tar file
         image_file_name = '{}_image.tar'.format(bucket_name)
         status = self.dockerhelper.export_container(bucket, tag='export', filename=bucket_dir.joinpath(image_file_name))
@@ -665,6 +673,39 @@ class Resen():
             self.add_storage(bucket_name,local.as_posix(),mount[1],permissions=mount[2])
 
         return
+
+    def bucket_diskspace(self, bucket_name):
+        # determine the disk volume the bucket uses
+        # report currently only includes mounts
+        # also need image/actual container volume somehow
+        # get bucket
+        bucket = self.get_bucket(bucket_name)
+
+        report = dict()
+        report['image'] = 0.0
+        report['storage'] = list()
+
+        total_size = 0.0
+        for mount in bucket['docker']['storage']:
+            mount_size = self.dir_size(mount[0])/1.e6
+            report['storage'].append({'local':mount[0],'size':mount_size})
+            total_size += mount_size
+
+        report['total_storage'] = total_size
+
+        return report
+
+    def dir_size(self, directory):
+        # returns total size of directory in bytes
+        # should we follow symlinks?
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                # skip if it is symbolic link
+                if not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+        return total_size
 
 
     def list_buckets(self,names_only=False,bucket_name=None):
