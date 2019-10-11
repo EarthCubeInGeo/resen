@@ -79,6 +79,7 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
             print("...adding mounts...")
             for mount in mounts:
                 self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
+            self.program.create_container(bucket_name)
             print("Bucket created successfully!")
         except Exception as e:
             print("Bucket creation failed!")
@@ -221,6 +222,7 @@ import_bucket : Import a bucket from a .tgz file by providing input."""
         try:
             self.program.import_bucket(bucket_name, file_name)
             self.program.add_port(bucket_name)
+            self.program.create_bucket(bucket_name)
         except (ValueError, RuntimeError) as e:
             print(e)
             return

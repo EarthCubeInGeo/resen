@@ -96,12 +96,12 @@ class DockerHelper():
         return container.status
 
 
-    def execute_command(self,bucket,command,detach=True):
+    def execute_command(self,bucket,command,user='jovyan',detach=True):
         '''
         Execute a command in a container.  Returns the exit code and output
         '''
         container = self.docker.containers.get(bucket['docker']['container'])
-        result = container.exec_run(command,detach=detach)
+        result = container.exec_run(command,user=user,detach=detach)
         return result.exit_code, result.output
 
 
@@ -206,7 +206,7 @@ class DockerHelper():
         print(out.keys())
         # Can't figure out if there is a way to determine the size of the container itself
         # using self.apiclient.inspect_image(), you can determine the size of the base image, but this won't included anything the user's added
-        
+
 
     def get_container_status(self, bucket):
         '''

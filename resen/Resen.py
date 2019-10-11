@@ -364,6 +364,27 @@ class Resen():
             else:
                 port += 1
 
+    def create_container(self, bucket_name):
+
+        # get bucket
+        bucket = self.get_bucket(bucket_name)
+
+        # Make sure we have an image assigned to the bucket
+        if bucket['docker']['image_id'] is None:
+            raise RuntimeError('Bucket does not have an image assigned to it.')
+
+        container_id, status = self.dockerhelper.create_container(bucket)
+        bucket['docker']['container'] = container_id
+        bucket['docker']['status'] = status
+        self.save_config()
+
+        # start bucket and execute any commands needed for proper set-up
+        self.start_bucket(bucket_name)
+        # run commands to set up sudo for jovyan
+        self.set_sudo(bucket_name)
+        # command = "echo 'jovyan:%s | chpasswd' && adduser jovyan sudo && sed --in-place 's/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\1/' /etc/sudoers' % password"
+        # self.execute_command(bucket_name, command)
+        self.stop_bucket(bucket_name)
 
     def start_bucket(self,bucket_name):
         '''
@@ -377,16 +398,10 @@ class Resen():
             # print('Bucket %s is already running!' % (bucket['bucket']['name']))
             return
 
-        # Make sure we have an image assigned to the bucket
-        if bucket['docker']['image_id'] is None:
-            raise RuntimeError('Bucket does not have an image assigned to it.')
-
-        # If a container hasn't been created yet, create one
+        # If a container hasn't been created yet, raise error
         if bucket['docker']['container'] is None:
-            container_id, status = self.dockerhelper.create_container(bucket)
-            bucket['docker']['container'] = container_id
-            bucket['docker']['status'] = status
-            self.save_config()
+            raise RuntimeError('Container for this bucket has not been created yet.  Cannot start bucket.')
+            # self.create_container(bucket_name)
 
         self.update_bucket_statuses() # Nessisary?  I believe this is taken care of above
         # Is this second call nessisary?
@@ -400,7 +415,7 @@ class Resen():
         if status != 'running':
             raise RuntimeError('Failed to start bucket %s' % (bucket['bucket']['name']))
 
-        return True
+        return
 
 
     def stop_bucket(self,bucket_name):
@@ -428,7 +443,7 @@ class Resen():
         return
 
 
-    def execute_command(self,bucket_name,command,detach=True):
+    def execute_command(self,bucket_name,command,user='jovyan',detach=True):
         '''
         Execute a command in the bucket.  Returns the exit code and output form the command, if applicable (if not detached?).
         '''
@@ -441,7 +456,7 @@ class Resen():
             raise RuntimeError('Bucket %s is not running!' % (bucket['bucket']['name']))
 
         # execute command
-        result = self.dockerhelper.execute_command(bucket,command,detach=detach)
+        result = self.dockerhelper.execute_command(bucket,command,user=user,detach=detach)
         code, output = result
         if (detach and code is not None) or (not detach and code!=0):
             raise RuntimeError('Failed to execute command %s' % (command))
@@ -449,16 +464,9 @@ class Resen():
         return result
 
     def set_sudo(self, bucket_name, password='ganimede'):
-        # get bucket
-        bucket = self.get_bucket(bucket_name)
 
-        command = 'echo "jovyan:%s | chpasswd" && adduser jovyan sudo' % password
-        ## NEED SOMETHING ELSE!!!
-        # This sets a password and adds jovyan to the sudo group, but /etc/sudoers still has
-        # %sudo ALL=(ALL:ALL) ALL
-        # commented out, so sudo group can't act as root
-
-        self.execute_command(bucket_name, command)
+        cmd = "bash -cl 'echo \"jovyan:{}\" | chpasswd && usermod -aG sudo jovyan && sed --in-place \"s/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\\1/\" /etc/sudoers'".format(password)
+        self.execute_command(bucket_name, cmd, user='root')
 
         return
 
