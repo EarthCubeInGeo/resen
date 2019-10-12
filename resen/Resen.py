@@ -738,7 +738,22 @@ class Resen():
 
         else:   # TODO, print all bucket info for bucket_name
             bucket = self.get_bucket(bucket_name)
-            print(bucket)
+
+            print("%s\n%s\n" % (bucket['bucket']['name'],'='*len(bucket['bucket']['name'])))
+            print('Resen-core Version: ', bucket['docker']['image'])
+            print('Status: ', bucket['docker']['status'])
+            print('Jupyter Token: ', bucket['docker']['jupyter']['token'])
+            print('Jupyter Port: ', bucket['docker']['jupyter']['port'])
+
+            print('\nStorage:')
+            print("{:<40}{:<40}{:<40}".format("Local","Bucket","Permissions"))
+            for mount in bucket['docker']['storage']:
+                print("{:<40}{:<40}{:<40}".format(mount[0], mount[1], mount[2]))
+
+            print('\nPorts:')
+            print("{:<15}{:<15}".format("Local","Bucket"))
+            for port in bucket['docker']['port']:
+                print("{:<15}{:<15}".format(port[0], port[1]))
 
         return
 
