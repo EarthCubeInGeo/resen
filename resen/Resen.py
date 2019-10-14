@@ -684,13 +684,12 @@ class Resen():
 
     def bucket_diskspace(self, bucket_name):
         # determine the disk volume the bucket uses
-        # report currently only includes mounts
-        # also need image/actual container volume somehow
+
         # get bucket
         bucket = self.get_bucket(bucket_name)
 
         report = dict()
-        report['image'] = 0.0
+        report['container'] = self.dockerhelper.get_container_size(bucket)/1.e6
         report['storage'] = list()
 
         total_size = 0.0

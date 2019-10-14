@@ -199,14 +199,15 @@ class DockerHelper():
 
     def get_container_size(self, bucket):
         # determine the size of the container (disk space)
-        # this is usuful for determining if the commit/save is possible or if the image will be too big
-        self.apiclient = docker.APIClient()
-        # container = self.docker.containers.get(bucket['docker']['container'])
-        out = self.apiclient.inspect_container(bucket['docker']['container'])
-        print(out.keys())
-        # Can't figure out if there is a way to determine the size of the container itself
-        # using self.apiclient.inspect_image(), you can determine the size of the base image, but this won't included anything the user's added
+        # docker container inspect (https://docs.docker.com/engine/reference/commandline/container_inspect/) should be able to be used
+        #   for this purpose, but it looks like the docker SDK equivilent (APIClient.inspect_container()) does not include fuctionality
+        #   for the --size flag (https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.container), so the dict returned
+        #   does not have size information
 
+        with docker.APIClient() as apiclient:
+            info = apiclient.containers(all=True, size=True, filters={'id':bucket['docker']['container']})[0]
+
+        return info['SizeRw']+info['SizeRootFs']
 
     def get_container_status(self, bucket):
         '''

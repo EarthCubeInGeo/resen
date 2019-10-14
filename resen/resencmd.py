@@ -191,6 +191,7 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
 
         # identify storage locations to exclude
         exclude_list = []
+        total_size = 0.
         if len(report['storage']) > 0:
             print("The following local directories are mounted to the bucket (total %s MB):" % int(report['total_storage']))
             for mount in report['storage']:
@@ -199,9 +200,22 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
             rsp = self.get_yn(msg)
             if rsp == 'n':
                 for mount in report['storage']:
-                    rsp = self.get_yn(">>> Include %s [%s MB]? (y/n): " % (mount['local'],mount['size']))
+                    rsp = self.get_yn(">>> Include %s [%s MB]? (y/n): " % (mount['local'], mount['size']))
                     if rsp == 'n':
                         exclude_list.append(mount['local'])
+                    else:
+                        total_size += mount['size']
+            else:
+                total_size = report['total_storage']
+
+        # Find the maximum output file size and required disk space for bucket export
+        output = report['container']*2. + total_size*2.
+        required = max(report['container']*3., output)
+
+        print('This export could require up to %s MB of disk space to complete and will produce an output file up to %s MB.' % (int(required), int(output)))
+        msg = '>>> Are you sure you would like to continue? '
+        rsp = self.get_yn(msg)
+
 
         try:
             print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
