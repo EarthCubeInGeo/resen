@@ -222,7 +222,7 @@ import_bucket : Import a bucket from a .tgz file by providing input."""
         try:
             self.program.import_bucket(bucket_name, file_name)
             self.program.add_port(bucket_name)
-            self.program.create_bucket(bucket_name)
+            self.program.create_container(bucket_name, sudo=False)
         except (ValueError, RuntimeError) as e:
             print(e)
             return

@@ -364,7 +364,7 @@ class Resen():
             else:
                 port += 1
 
-    def create_container(self, bucket_name):
+    def create_container(self, bucket_name, sudo=True):
 
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -378,13 +378,13 @@ class Resen():
         bucket['docker']['status'] = status
         self.save_config()
 
-        # start bucket and execute any commands needed for proper set-up
-        self.start_bucket(bucket_name)
-        # run commands to set up sudo for jovyan
-        self.set_sudo(bucket_name)
-        # command = "echo 'jovyan:%s | chpasswd' && adduser jovyan sudo && sed --in-place 's/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\1/' /etc/sudoers' % password"
-        # self.execute_command(bucket_name, command)
-        self.stop_bucket(bucket_name)
+        if sudo:
+            # start bucket and execute any commands needed for proper set-up
+            self.start_bucket(bucket_name)
+            # run commands to set up sudo for jovyan
+            self.set_sudo(bucket_name)
+            # self.execute_command(bucket_name, command)
+            self.stop_bucket(bucket_name)
 
     def start_bucket(self,bucket_name):
         '''
