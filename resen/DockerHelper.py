@@ -27,13 +27,13 @@ class DockerHelper():
 
         # set up basic keyword argument dict
         kwargs = dict()
-        kwargs['name'] = self.container_prefix + bucket['bucket']['name']
+        kwargs['name'] = self.container_prefix + bucket['name']
         kwargs['command'] = 'bash'
         kwargs['tty'] = True
         kwargs['ports'] = dict()
 
         # if bucket has ports, add these to kwargs
-        for host, container, tcp in bucket['docker']['port']:
+        for host, container, tcp in bucket['port']:
             if tcp:
                 key = '%s/tcp' % (container)
             else:
@@ -42,24 +42,24 @@ class DockerHelper():
 
         # if bucket has mounts, add these to kwargs
         kwargs['volumes'] = dict()
-        for host, container, permissions in bucket['docker']['storage']:
+        for host, container, permissions in bucket['storage']:
             temp = {'bind': container, 'mode': permissions}
             kwargs['volumes'][host] = temp
 
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
-        if bucket['docker']['image_id'] not in local_image_ids:
-            print("Pulling image: %s" % bucket['docker']['image'])
+        if bucket['image_id'] not in local_image_ids:
+            print("Pulling image: %s" % bucket['image'])
             print("   This may take some time...")
-            status = self.stream_pull_image(bucket['docker']['pull_image'])
-            image = self.docker.images.get(bucket['docker']['pull_image'])
+            status = self.stream_pull_image(bucket['pull_image'])
+            image = self.docker.images.get(bucket['pull_image'])
             repo,digest = pull_image.split('@')
             # When pulling from repodigest sha256 no tag is assigned. So:
-            image.tag(repo, tag=bucket['docker']['image'])
+            image.tag(repo, tag=bucket['image'])
             print("Done!")
 
         # start the container
-        container = self.docker.containers.create(bucket['docker']['image_id'],**kwargs)
+        container = self.docker.containers.create(bucket['image_id'],**kwargs)
 
         return container.id, container.status
 
@@ -68,7 +68,7 @@ class DockerHelper():
         '''
         Remove the container associated with the provided bucket.
         '''
-        container = self.docker.containers.get(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['container'])
         container.remove()
         return
 
@@ -78,7 +78,7 @@ class DockerHelper():
         Start a container.
         '''
         # need to check if bucket config has changed since last run
-        container = self.docker.containers.get(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['container'])
         container.start()   # this does nothing if already started
         container.reload()
         time.sleep(0.1)
@@ -89,7 +89,7 @@ class DockerHelper():
         '''
         Stop a container.
         '''
-        container = self.docker.containers.get(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['container'])
         container.stop()    # this does nothing if already stopped
         container.reload()
         time.sleep(0.1)
@@ -100,7 +100,7 @@ class DockerHelper():
         '''
         Execute a command in a container.  Returns the exit code and output
         '''
-        container = self.docker.containers.get(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['container'])
         result = container.exec_run(command,user=user,detach=detach)
         return result.exit_code, result.output
 
@@ -165,7 +165,7 @@ class DockerHelper():
         # Repository naming conventions?
         # Does the tag name matter?
 
-        container = self.docker.containers.get(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['container'])
 
         # create new image from container
         container.commit(repository='earthcubeingeo/resen-lite',tag=tag)
@@ -205,7 +205,7 @@ class DockerHelper():
         #   does not have size information
 
         with docker.APIClient() as apiclient:
-            info = apiclient.containers(all=True, size=True, filters={'id':bucket['docker']['container']})[0]
+            info = apiclient.containers(all=True, size=True, filters={'id':bucket['container']})[0]
 
         return info['SizeRw']+info['SizeRootFs']
 
@@ -213,7 +213,7 @@ class DockerHelper():
         '''
         Get the status of a particular container.
         '''
-        container = self.docker.containers.get(bucket['docker']['container'])
+        container = self.docker.containers.get(bucket['container'])
         container.reload()  # maybe redundant
 
         return container.status
