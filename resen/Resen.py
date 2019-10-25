@@ -580,7 +580,7 @@ class Resen():
         return pid
 
 
-    def export_bucket(self, bucket_name, outfile, exclude_mounts=[]):
+    def export_bucket(self, bucket_name, outfile, exclude_mounts=[], img_name=None, img_tag=None):
         '''
         Export a bucket
         '''
@@ -599,46 +599,50 @@ class Resen():
         bucket_dir = Path(os.getcwd()).joinpath('resen_{}'.format(bucket_name))
         os.mkdir(bucket_dir)
 
-        # initialize manifest
-        manifest = dict()
+        try:
 
-        # # find container size and determine if there's enough disk space for the export
-        # # need to figure out a way to get the virtual size of a container with docker-py
-        # this code should probably go in the bucket_diskspace() method
-        # container_size = self.dockerhelper.get_container_size(bucket)
-        # disk_space =
-        # if disk_space < container_size*3:
-        #     raise RuntimeError("Not enough disk space for image export!")
+            # initialize manifest
+            manifest = dict()
 
-        # export container to image *.tar file
-        image_file_name = '{}_image.tar'.format(bucket_name)
-        status = self.dockerhelper.export_container(bucket, tag='export', filename=bucket_dir.joinpath(image_file_name))
-        manifest['image'] = image_file_name
+            # # find container size and determine if there's enough disk space for the export
+            # container_size = self.bucket_diskspace(bucket_name)
+            # disk_space =
+            # if disk_space < container_size*3:
+            #     raise RuntimeError("Not enough disk space for image export!")
 
-        # save all mounts individually as *.tgz files
-        manifest['mounts'] = list()
-        for mount in bucket['storage']:
-            # skip mount if it is listed in exclude_mounts
-            if mount[0] in exclude_mounts:
-                continue
+            # export container to image *.tar file
+            image_file_name = '{}_image.tar'.format(bucket_name)
+            status = self.dockerhelper.export_container(bucket, name=img_name, tag=img_tag, filename=bucket_dir.joinpath(image_file_name))
+            manifest['image'] = image_file_name
 
-            source_dir = Path(mount[0])
-            mount_file_name = '{}_mount.tgz'.format(source_dir.name)
-            with tarfile.open(bucket_dir.joinpath(mount_file_name), "w:gz") as tar:
-                tar.add(source_dir, arcname=source_dir.name)
+            # save all mounts individually as *.tgz files
+            manifest['mounts'] = list()
+            for mount in bucket['storage']:
+                # skip mount if it is listed in exclude_mounts
+                if mount[0] in exclude_mounts:
+                    continue
 
-            manifest['mounts'].append([mount_file_name, mount[1], mount[2]])
+                source_dir = Path(mount[0])
+                mount_file_name = '{}_mount.tgz'.format(source_dir.name)
+                with tarfile.open(bucket_dir.joinpath(mount_file_name), "w:gz") as tar:
+                    tar.add(source_dir, arcname=source_dir.name)
 
-        # save manifest file
-        with open(bucket_dir.joinpath('manifest.json'),'w') as f:
-            json.dump(manifest, f)
+                manifest['mounts'].append([mount_file_name, mount[1], mount[2]])
 
-        # save entire bucket as tgz file
-        with tarfile.open(outfile, 'w:gz') as tar:
-            tar.add(bucket_dir, arcname=bucket_dir.name)
+            # save manifest file
+            with open(bucket_dir.joinpath('manifest.json'),'w') as f:
+                json.dump(manifest, f)
 
-        # remove temporary directory
-        shutil.rmtree(bucket_dir)
+            # save entire bucket as tgz file
+            with tarfile.open(outfile, 'w:gz') as tar:
+                tar.add(bucket_dir, arcname=bucket_dir.name)
+
+        except (RuntimeError,tarfile.TarError) as e:
+            raise RuntimeError('Bucket Export Failed: {}'.format(str(e)))
+
+        finally:
+            # remove temporary directory
+            shutil.rmtree(bucket_dir)
 
         return
 

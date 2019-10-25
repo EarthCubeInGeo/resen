@@ -2,6 +2,7 @@
 
 import docker
 import time
+import requests
 
 # all the docker commands wrapped up nicely
 
@@ -16,7 +17,7 @@ class DockerHelper():
         # What does container.reload() do?  Do we need it?  Where?
         self.container_prefix = 'resen_'
 
-        self.docker = docker.from_env(timeout=300)
+        self.docker = docker.from_env()
 
     # def create_container(self,**input_kwargs):
     def create_container(self,bucket):
@@ -81,7 +82,9 @@ class DockerHelper():
         container = self.docker.containers.get(bucket['container'])
         container.start()   # this does nothing if already started
         container.reload()
-        time.sleep(0.1)
+        # print(container.status)
+        # time.sleep(0.1)
+        # print(container.status)
         return container.status
 
 
@@ -92,7 +95,7 @@ class DockerHelper():
         container = self.docker.containers.get(bucket['container'])
         container.stop()    # this does nothing if already stopped
         container.reload()
-        time.sleep(0.1)
+        # time.sleep(0.1)
         return container.status
 
 
@@ -154,7 +157,7 @@ class DockerHelper():
 
         return
 
-    def export_container(self,bucket,tag=None, filename=None):
+    def export_container(self,bucket,name=None,tag=None,filename=None):
         '''
         Export existing container to a tared image file.  After tar file has been created, image of container is removed.
         '''
@@ -167,19 +170,38 @@ class DockerHelper():
 
         container = self.docker.containers.get(bucket['container'])
 
-        # create new image from container
-        container.commit(repository='earthcubeingeo/resen-lite',tag=tag)
+        # set a long timeout for this - image save takes a while
+        default_timeout = self.docker.api.timeout
+        self.docker.api.timeout = 60.*60.*24.
 
-        # save image as *.tar file
-        image_name = 'earthcubeingeo/resen-lite:{}'.format(tag)
-        image = self.docker.images.get(image_name)
-        out = image.save()
-        with open(filename, 'wb') as f:
-            for chunk in out:
-                f.write(chunk)
+        if not name:
+            name = bucket['name'].lower()
+        if not tag:
+            tag = 'latest'
 
-        # remove image after it has been saved
-        self.docker.images.remove(image_name)
+        repo = 'earthcubeingeo/{}'.format(name)
+        image_name = '{}:{}'.format(repo,tag)
+
+        try:
+            # create new image from container
+            container.commit(repository=repo,tag=tag)
+
+            # save image as *.tar file
+            image = self.docker.images.get(image_name)
+            out = image.save()
+            with open(filename, 'wb') as f:
+                for chunk in out:
+                    f.write(chunk)
+
+        except requests.exceptions.ReadTimeout:
+            raise RuntimeError('Timeout while exporting bucket!')
+
+        finally:
+            # remove image after it has been saved or if a timeout occurs
+            self.docker.images.remove(image_name)
+
+            # reset default timeout
+            self.docker.api.timeout = default_timeout
 
         return
 

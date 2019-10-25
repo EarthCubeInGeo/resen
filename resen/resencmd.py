@@ -70,21 +70,21 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
         msg = '>>> Start bucket and jupyterlab? (y/n): '
         start = self.get_yn(msg) == 'y'
 
-        try:
-            self.program.create_bucket(bucket_name)
-            print("...adding core...")
-            self.program.set_image(bucket_name,docker_image)
-            print("...adding ports...")
-            self.program.add_port(bucket_name)
-            print("...adding mounts...")
-            for mount in mounts:
-                self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
-            self.program.create_container(bucket_name)
-            print("Bucket created successfully!")
-        except Exception as e:
-            print("Bucket creation failed!")
-            print(e)
-            return
+        # try:
+        self.program.create_bucket(bucket_name)
+        print("...adding core...")
+        self.program.set_image(bucket_name,docker_image)
+        print("...adding ports...")
+        self.program.add_port(bucket_name)
+        print("...adding mounts...")
+        for mount in mounts:
+            self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
+        self.program.create_container(bucket_name)
+        print("Bucket created successfully!")
+        # except Exception as e:
+        #     print("Bucket creation failed!")
+        #     print(e)
+        #     return
 
         if start:
             # start bucket
@@ -183,9 +183,18 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
             print("Syntax Error. Usage: export_bucket bucket_name")
             return
 
+        bucket_name = inputs[0]
+
         file_name = self.get_valid_local_path('>>> Enter name for output tgz file: ', file=True)
 
-        bucket_name = inputs[0]
+        print('By default, the output image will be named "{}" and tagged "latest".'.format(bucket_name.lower()))
+        rsp = self.get_yn(">>> Would you like to change the name and tag? (y/n): ")
+        if rsp=='y':
+            img_name = self.get_valid_tag(">>> Image name: ")
+            img_tag = self.get_valid_tag(">>> Image tag: ")
+        else:
+            img_name = None
+            img_tag = None
 
         report = self.program.bucket_diskspace(bucket_name)
 
@@ -209,17 +218,17 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
                 total_size = report['total_storage']
 
         # Find the maximum output file size and required disk space for bucket export
-        output = report['container']*2. + total_size*2.
-        required = max(report['container']*3., output)
+        output = report['container'] + total_size
+        required = max(report['container']*3., output*2.)
 
         print('This export could require up to %s MB of disk space to complete and will produce an output file up to %s MB.' % (int(required), int(output)))
-        msg = '>>> Are you sure you would like to continue? '
-        rsp = self.get_yn(msg)
+        # msg = '>>> Are you sure you would like to continue? (y/n): '
+        rsp = self.get_yn('>>> Are you sure you would like to continue? (y/n): ')
 
 
         try:
             print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
-            self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list)
+            self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list, img_name=img_name, img_tag=img_tag)
         except (ValueError, RuntimeError) as e:
             print(e)
             return
@@ -468,6 +477,22 @@ import_bucket : Import a bucket from a .tgz file by providing input."""
             else:
                 print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
 
+    def get_valid_tag(self,msg):
+        while True:
+            tag = input(msg)
+
+            # check if bucket_name has spaces in it and is greater than 20 characters
+            # also bucket name must start with a letter
+            if ' ' in tag:
+                print("Tags may not contain spaces.")
+            elif len(tag) > 128:
+                print("Tags must be less than 128 characters.")
+            elif not tag[0].isalpha():
+                print("Tags must start with an alphabetic character.")
+            elif not tag.islower():
+                print("Tags may only contain lower case letters.")
+            else:
+                return tag
 
 
 
