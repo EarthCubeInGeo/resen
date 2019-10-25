@@ -70,21 +70,21 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
         msg = '>>> Start bucket and jupyterlab? (y/n): '
         start = self.get_yn(msg) == 'y'
 
-        # try:
-        self.program.create_bucket(bucket_name)
-        print("...adding core...")
-        self.program.set_image(bucket_name,docker_image)
-        print("...adding ports...")
-        self.program.add_port(bucket_name)
-        print("...adding mounts...")
-        for mount in mounts:
-            self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
-        self.program.create_container(bucket_name)
-        print("Bucket created successfully!")
-        # except Exception as e:
-        #     print("Bucket creation failed!")
-        #     print(e)
-        #     return
+        try:
+            self.program.create_bucket(bucket_name)
+            print("...adding core...")
+            self.program.set_image(bucket_name,docker_image)
+            print("...adding ports...")
+            self.program.add_port(bucket_name)
+            print("...adding mounts...")
+            for mount in mounts:
+                self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
+            self.program.create_container(bucket_name)
+            print("Bucket created successfully!")
+        except Exception as e:
+            print("Bucket creation failed!")
+            print(e)
+            return
 
         if start:
             # start bucket
@@ -242,13 +242,37 @@ import_bucket : Import a bucket from a .tgz file by providing input."""
 
         file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', file=True)
 
+        rsp = self.get_yn(">>> Would you like to keep the default name and tag for the imported image? (y/n): ")
+        if rsp=='n':
+            img_name = self.get_valid_tag(">>> Image name: ")
+            img_tag = self.get_valid_tag(">>> Image tag: ")
+        else:
+            img_name = None
+            img_tag = None
+
+        # should we start jupyterlab when done creating bucket?
+        msg = '>>> Start bucket and jupyterlab? (y/n): '
+        start = self.get_yn(msg) == 'y'
+
+
         try:
-            self.program.import_bucket(bucket_name, file_name)
+            self.program.import_bucket(bucket_name, file_name, img_name=img_name, img_tag=img_tag)
             self.program.add_port(bucket_name)
             self.program.create_container(bucket_name, sudo=False)
         except (ValueError, RuntimeError) as e:
+            print('Bucket import failed!')
             print(e)
             return
+
+        if start:
+            # start bucket
+            try:
+                self.program.start_bucket(bucket_name)
+                print("...starting jupyterlab...")
+                self.program.start_jupyter(bucket_name)
+            except Exception as e:
+                print(e)
+                return
 
         # TODO:
         # Have prompt for user to start bucket automatically?

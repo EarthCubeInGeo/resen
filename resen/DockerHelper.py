@@ -157,16 +157,13 @@ class DockerHelper():
 
         return
 
-    def export_container(self,bucket,name=None,tag=None,filename=None):
+    def export_container(self,bucket,filename,repo,tag):
         '''
         Export existing container to a tared image file.  After tar file has been created, image of container is removed.
         '''
 
         # TODO:
         # Add checks that image was sucessfully saved before removing it?
-        # Pass in repository name - currently hard-coded
-        # Repository naming conventions?
-        # Does the tag name matter?
 
         container = self.docker.containers.get(bucket['container'])
 
@@ -174,12 +171,6 @@ class DockerHelper():
         default_timeout = self.docker.api.timeout
         self.docker.api.timeout = 60.*60.*24.
 
-        if not name:
-            name = bucket['name'].lower()
-        if not tag:
-            tag = 'latest'
-
-        repo = 'earthcubeingeo/{}'.format(name)
         image_name = '{}:{}'.format(repo,tag)
 
         try:
@@ -205,17 +196,16 @@ class DockerHelper():
 
         return
 
-    def import_image(self,filename,name=None):
+    def import_image(self,filename,repo,tag):
         '''
         Import an image from a tar file.  Return the image ID.
         '''
 
-        # can add tag with image.tag(repository, tag=)
-        # Do we want to? Does this matter?
-        # Images don't NEED tags, but it makes it convenient
-
         with open(filename, 'rb') as f:
             image = self.docker.images.load(f)[0]
+
+        # add tag
+        image.tag(repo, tag)
 
         return image.id
 

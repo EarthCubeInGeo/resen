@@ -199,7 +199,7 @@ class Resen():
 
         ind = valid_versions.index(docker_image)
         image = self.valid_cores[ind]
-        bucket['image'] = image['version']
+        bucket['image'] = '{}/{}:{}'.format(image['org'],image['repo'],image['version'])
         bucket['image_id'] = image['image_id']
         bucket['pull_image'] = '%s/%s@%s' % (image['org'],image['repo'],image['repodigest'])
 
@@ -588,7 +588,6 @@ class Resen():
         # tar compression - what should we use?
         # some kind of status bar would be useful - this takes a while
         # Should we include "human readable" metadata?
-        # let users select specific mounts to include
         # check size of mounts
         # check harddrive space for commit
 
@@ -610,10 +609,21 @@ class Resen():
             # if disk_space < container_size*3:
             #     raise RuntimeError("Not enough disk space for image export!")
 
+            if not img_name:
+                img_name = bucket['name'].lower()
+            if not img_tag:
+                img_tag = 'latest'
+
+            repo = 'earthcubeingeo/{}'.format(img_name)
+            # image_name = '{}:{}'.format(repo,tag)
+
             # export container to image *.tar file
             image_file_name = '{}_image.tar'.format(bucket_name)
-            status = self.dockerhelper.export_container(bucket, name=img_name, tag=img_tag, filename=bucket_dir.joinpath(image_file_name))
+            # status = self.dockerhelper.export_container(bucket, repo=repo, tag=img_tag, filename=bucket_dir.joinpath(image_file_name))
+            status = self.dockerhelper.export_container(bucket, bucket_dir.joinpath(image_file_name), repo, img_tag)
             manifest['image'] = image_file_name
+            manifest['image_repo'] = repo
+            manifest['image_tag'] = img_tag
 
             # save all mounts individually as *.tgz files
             manifest['mounts'] = list()
@@ -646,7 +656,7 @@ class Resen():
 
         return
 
-    def import_bucket(self,bucket_name,filename):
+    def import_bucket(self,bucket_name,filename,img_name=None,img_tag=None):
         '''
         Import bucket from tgz file.  Extract image and mounts.  Set up new bucket with image and mounts.
         This deos NOT add ports (these should be selected based on new local computer) and container is NOT created/started.
@@ -667,12 +677,19 @@ class Resen():
         self.create_bucket(bucket_name)
         bucket = self.get_bucket(bucket_name)
 
+        if not img_name:
+            img_repo = manifest['image_repo']
+        else:
+            img_repo = 'earthcubeingeo/{}'.format(img_name)
+        if not img_tag:
+            img_tag = manifest['image_tag']
+
         # load image
-        image_id = self.dockerhelper.import_image(bucket_dir.joinpath(manifest['image']))
+        img_id = self.dockerhelper.import_image(bucket_dir.joinpath(manifest['image']),img_repo,img_tag)
         # add image to bucket
         # Don't really need the image or pull image fields, but there's errors if they're not set?
-        bucket['image'] = ''
-        bucket['image_id'] = image_id
+        bucket['image'] = '{}:{}'.format(img_repo,img_tag)
+        bucket['image_id'] = img_id
         bucket['pull_image'] = ''
 
         # add mounts to bucket
