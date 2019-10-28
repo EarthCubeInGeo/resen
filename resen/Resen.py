@@ -190,7 +190,7 @@ class Resen():
 
         # if container has been created, cannot change the image
         if bucket['status'] is not None:
-            raise RuntimeError("Bucket has already been started, cannot remove port: %s" % (local))
+            raise RuntimeError("Bucket has already been started, cannot set new image.")
 
         # check that input is a valid image
         valid_versions = [x['version'] for x in self.valid_cores]
@@ -199,9 +199,11 @@ class Resen():
 
         ind = valid_versions.index(docker_image)
         image = self.valid_cores[ind]
-        bucket['image'] = '{}/{}:{}'.format(image['org'],image['repo'],image['version'])
-        bucket['image_id'] = image['image_id']
-        bucket['pull_image'] = '%s/%s@%s' % (image['org'],image['repo'],image['repodigest'])
+
+        bucket['image'] = image
+        # bucket['image'] = '{}/{}:{}'.format(image['org'],image['repo'],image['version'])
+        # bucket['image_id'] = image['image_id']
+        # bucket['pull_image'] = '%s/%s@%s' % (image['org'],image['repo'],image['repodigest'])
 
         self.save_config()
 
@@ -370,7 +372,7 @@ class Resen():
         bucket = self.get_bucket(bucket_name)
 
         # Make sure we have an image assigned to the bucket
-        if bucket['image_id'] is None:
+        if bucket['image'] is None:
             raise RuntimeError('Bucket does not have an image assigned to it.')
 
         container_id, status = self.dockerhelper.create_container(bucket)
@@ -749,10 +751,10 @@ class Resen():
                     print("{:<0}".format(str(name)))
             else:
 
-                print("{:<20}{:<25}{:<25}".format("Bucket Name","Docker Image","Status"))
+                print("{:<20}{:<25}{:<25}".format("Bucket Name","Version","Status"))
                 for bucket in self.buckets:
                     name = self.__trim(str(bucket['name']),18)
-                    image = self.__trim(str(bucket['image']),23)
+                    image = self.__trim(str(bucket['image']['version']),23)
                     status = self.__trim(str(bucket['status']),23)
                     print("{:<20}{:<25}{:<25}".format(name, image, status))
 
@@ -760,10 +762,12 @@ class Resen():
             bucket = self.get_bucket(bucket_name)
 
             print("%s\n%s\n" % (bucket['name'],'='*len(bucket['name'])))
-            print('Resen-core Version: ', bucket['image'])
+            print('Resen-core Version: ', bucket['image']['version'])
             print('Status: ', bucket['status'])
             print('Jupyter Token: ', bucket['jupyter']['token'])
             print('Jupyter Port: ', bucket['jupyter']['port'])
+            if bucket['jupyter']['token']:
+                print("Jupyter lab URL: http://localhost:%s/?token=%s" % (bucket['jupyter']['port'],bucket['jupyter']['token']))
 
             print('\nStorage:')
             print("{:<40}{:<40}{:<40}".format("Local","Bucket","Permissions"))
@@ -855,9 +859,12 @@ class Resen():
         return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
                  "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
                  "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},
-                 {"version":"latest","repo":"resen-core","org":"earthcubeingeo",
-                  "image_id":'sha256:ea19161343fca08afbb859359d8c0e7f8276819dd959695fd774636819b11dbf',
-                  "repodigest":''},]
+                {"version":"old","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:ea19161343fca08afbb859359d8c0e7f8276819dd959695fd774636819b11dbf',
+                 "repodigest":''},
+                {"version":"2019.1.0","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:5300c6652851f35d2fabf866491143f471a7e121998fba27a8dff6b3c064af35',
+                 "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},]
 
     def _get_config_dir(self):
         appname = 'resen'

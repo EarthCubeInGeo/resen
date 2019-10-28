@@ -49,18 +49,19 @@ class DockerHelper():
 
         # check if we have image, if not, pull it
         local_image_ids = [x.id for x in self.docker.images.list()]
-        if bucket['image_id'] not in local_image_ids:
-            print("Pulling image: %s" % bucket['image'])
-            print("   This may take some time...")
-            status = self.stream_pull_image(bucket['pull_image'])
-            image = self.docker.images.get(bucket['pull_image'])
-            repo,digest = pull_image.split('@')
-            # When pulling from repodigest sha256 no tag is assigned. So:
-            image.tag(repo, tag=bucket['image'])
-            print("Done!")
+        if bucket['image']['image_id'] not in local_image_ids:
+            # print("Pulling image: %s" % bucket['image']['repo'])
+            # print("   This may take some time...")
+            # status = self.stream_pull_image(bucket['pull_image'])
+            self.stream_pull_image(bucket['image'])
+            # image = self.docker.images.get(bucket['pull_image'])
+            # repo,digest = pull_image.split('@')
+            # # When pulling from repodigest sha256 no tag is assigned. So:
+            # image.tag(repo, tag=bucket['image'])
+            # print("Done!")
 
         # start the container
-        container = self.docker.containers.create(bucket['image_id'],**kwargs)
+        container = self.docker.containers.create(bucket['image']['image_id'],**kwargs)
 
         return container.id, container.status
 
@@ -108,7 +109,8 @@ class DockerHelper():
         return result.exit_code, result.output
 
 
-    def stream_pull_image(self,pull_image):
+    # def stream_pull_image(self,pull_image):
+    def stream_pull_image(self,image):
         '''
         Pull image from dockerhub.
         '''
@@ -126,10 +128,15 @@ class DockerHelper():
             print(bar+" %6.2f %%, %5.3f/%4.2fGB %s"%(percentage,
                 accumulated/1024**3,sum_total/1024**3,time_info),end="")
 
+        print('Pulling image: {}:{}'.format(image['repo'],image['version']))
+        print('   This may take some time...')
+
         id_list = []
         id_current = []
         id_total = 0
         t0 = prev_time = datetime.datetime.now()
+        # define pull_image sha256
+        pull_image = '{}/{}@{}'.format(image['org'],image['repo'],image['repodigest'])
         try:
             # Use a lower level pull call to stream the pull
             for line in self.docker.api.pull(pull_image,stream=True, decode=True):
@@ -154,6 +161,12 @@ class DockerHelper():
             raise RuntimeError("\nException encountered while pulling image {}\nException: {}".format(pull_image,str(e)))
 
         print() # to avoid erasing the progress bar at the end
+
+        # repo,digest = pull_image.split('@')
+        # When pulling from repodigest sha256 no tag is assigned. So:
+        docker_image = self.docker.images.get(pull_image)
+        docker_image.tag('{}/{}'.format(image['org'],image['repo']), tag=image['version'])
+        print("Done!")
 
         return
 
