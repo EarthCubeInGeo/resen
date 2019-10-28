@@ -66,12 +66,15 @@ class DockerHelper():
         return container.id, container.status
 
 
-    def remove_container(self,bucket):
+    def remove_container(self,bucket, remove_image=False):
         '''
         Remove the container associated with the provided bucket.
         '''
         container = self.docker.containers.get(bucket['container'])
         container.remove()
+
+        if remove_image:
+            self.docker.images.remove(bucket['image']['image_id'])
         return
 
 
@@ -80,7 +83,9 @@ class DockerHelper():
         Start a container.
         '''
         # need to check if bucket config has changed since last run
+        print(bucket['container'])
         container = self.docker.containers.get(bucket['container'])
+        print(container.id)
         container.start()   # this does nothing if already started
         container.reload()
         # print(container.status)
@@ -184,11 +189,13 @@ class DockerHelper():
         default_timeout = self.docker.api.timeout
         self.docker.api.timeout = 60.*60.*24.
 
-        image_name = '{}:{}'.format(repo,tag)
+        # image_name = '{}:{}'.format(repo,tag)
+        full_repo = '{}/{}'.format(bucket['image']['org'],repo)
+        image_name = '{}:{}'.format(full_repo,tag)
 
         try:
             # create new image from container
-            container.commit(repository=repo,tag=tag)
+            container.commit(repository=full_repo,tag=tag)
 
             # save image as *.tar file
             image = self.docker.images.get(image_name)

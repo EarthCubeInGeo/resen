@@ -43,8 +43,9 @@ import webbrowser  # use this to open web browser
 from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
 import tarfile
-import shutil
+import tempfile
 import socket
+import shutil
 
 from .DockerHelper import DockerHelper
 
@@ -163,7 +164,14 @@ class Resen():
 
         # if docker container created, remove it first and update status
         if bucket['status'] in ['created','exited'] and bucket['container'] is not None:
-            self.dockerhelper.remove_container(bucket)
+            # if bucket imported, clean up by removing image and import directory
+            if 'import_dir' in bucket:
+                self.dockerhelper.remove_container(bucket, remove_image=True)
+                # also remove temporary import directory
+                shutil.rmtree(bucket['import_dir'])
+            else:
+                self.dockerhelper.remove_container(bucket)
+
             bucket['status'] = None
             bucket['container'] = None
             self.save_config()
@@ -258,7 +266,7 @@ class Resen():
             permissions += ',Z'
 
         # Add storage location
-        bucket['docker']['storage'].append([local,container,permissions])
+        bucket['storage'].append([local,container,permissions])
         self.save_config()
 
         return
@@ -408,6 +416,7 @@ class Resen():
         self.update_bucket_statuses() # Nessisary?  I believe this is taken care of above
         # Is this second call nessisary?
         bucket = self.get_bucket(bucket_name)
+
         # start the container and update status
         status = self.dockerhelper.start_container(bucket)
         bucket['status'] = status
@@ -569,6 +578,7 @@ class Resen():
         '''
         Get PID for the jupyter server running in a particular bucket
         '''
+        # Consider using container.top() some how?
         code, output = self.execute_command(bucket_name, 'ps -ef', detach=False)
         output = output.decode('utf-8').split('\n')
 
@@ -582,7 +592,7 @@ class Resen():
         return pid
 
 
-    def export_bucket(self, bucket_name, outfile, exclude_mounts=[], img_name=None, img_tag=None):
+    def export_bucket(self, bucket_name, outfile, exclude_mounts=[], img_repo=None, img_tag=None):
         '''
         Export a bucket
         '''
@@ -597,10 +607,16 @@ class Resen():
         bucket = self.get_bucket(bucket_name)
 
         # create temporary directory that will become the final bucket tar file
-        bucket_dir = Path(os.getcwd()).joinpath('resen_{}'.format(bucket_name))
-        os.mkdir(bucket_dir)
+        # bucket_dir = Path(os.getcwd()).joinpath('resen_{}'.format(bucket_name))
+        # os.mkdir(bucket_dir)
+        # bucket_dir = tempfile.TemporaryDirectory()
 
-        try:
+        with tempfile.TemporaryDirectory() as bucket_dir:
+
+            bucket_dir_path = Path(bucket_dir)
+            print(bucket_dir_path)
+
+            # try:
 
             # initialize manifest
             manifest = dict()
@@ -611,20 +627,20 @@ class Resen():
             # if disk_space < container_size*3:
             #     raise RuntimeError("Not enough disk space for image export!")
 
-            if not img_name:
-                img_name = bucket['name'].lower()
+            if not img_repo:
+                img_repo = bucket['name'].lower()
             if not img_tag:
                 img_tag = 'latest'
 
-            repo = 'earthcubeingeo/{}'.format(img_name)
+            # repo = 'earthcubeingeo/{}'.format(img_name)
             # image_name = '{}:{}'.format(repo,tag)
 
             # export container to image *.tar file
             image_file_name = '{}_image.tar'.format(bucket_name)
             # status = self.dockerhelper.export_container(bucket, repo=repo, tag=img_tag, filename=bucket_dir.joinpath(image_file_name))
-            status = self.dockerhelper.export_container(bucket, bucket_dir.joinpath(image_file_name), repo, img_tag)
+            status = self.dockerhelper.export_container(bucket, bucket_dir_path.joinpath(image_file_name), img_repo, img_tag)
             manifest['image'] = image_file_name
-            manifest['image_repo'] = repo
+            manifest['image_repo'] = img_repo
             manifest['image_tag'] = img_tag
 
             # save all mounts individually as *.tgz files
@@ -636,72 +652,89 @@ class Resen():
 
                 source_dir = Path(mount[0])
                 mount_file_name = '{}_mount.tgz'.format(source_dir.name)
-                with tarfile.open(bucket_dir.joinpath(mount_file_name), "w:gz") as tar:
+                with tarfile.open(bucket_dir_path.joinpath(mount_file_name), "w:gz") as tar:
+                    print(source_dir, source_dir.name)
                     tar.add(source_dir, arcname=source_dir.name)
 
                 manifest['mounts'].append([mount_file_name, mount[1], mount[2]])
 
             # save manifest file
-            with open(bucket_dir.joinpath('manifest.json'),'w') as f:
+            with open(bucket_dir_path.joinpath('manifest.json'),'w') as f:
                 json.dump(manifest, f)
 
             # save entire bucket as tgz file
             with tarfile.open(outfile, 'w:gz') as tar:
-                tar.add(bucket_dir, arcname=bucket_dir.name)
+                print(bucket_dir_path)
+                for f in os.listdir(bucket_dir_path):
+                    print(bucket_dir_path.joinpath(f), f)
+                    tar.add(bucket_dir_path.joinpath(f), arcname=f)
 
-        except (RuntimeError,tarfile.TarError) as e:
-            raise RuntimeError('Bucket Export Failed: {}'.format(str(e)))
+        # except (RuntimeError,tarfile.TarError) as e:
+        #     raise RuntimeError('Bucket Export Failed: {}'.format(str(e)))
 
-        finally:
-            # remove temporary directory
-            shutil.rmtree(bucket_dir)
+        # finally:
+        #     # remove temporary directory
+        #     # shutil.rmtree(bucket_dir)
+        #     bucket_dir.cleanup()
 
         return
 
-    def import_bucket(self,bucket_name,filename,img_name=None,img_tag=None):
+    def import_bucket(self,bucket_name,filename,extract_dir=None,img_repo=None,img_tag=None):
         '''
         Import bucket from tgz file.  Extract image and mounts.  Set up new bucket with image and mounts.
-        This deos NOT add ports (these should be selected based on new local computer) and container is NOT created/started.
+        This does NOT add ports (these should be selected based on new local computer) and container is NOT created/started.
         '''
         # Should original tar files be removed after they're extracted?
         # Where should the bucket mounts be extracted to?
 
+        if not extract_dir:
+            # extract_dir = Path(filename).parent.joinpath('resen_{}'.format(bucket_name))
+            extract_dir = Path(filename).resolve().with_name('resen_{}'.format(bucket_name))
+        else:
+            extract_dir = Path(extract_dir)
+        # extract_dir.resolve()
+        # print(extract_dir)
+
+
         # untar bucket file
         with tarfile.open(filename) as tar:
-            tar.extractall()
-            bucket_dir = Path(filename).parent.joinpath(tar.getnames()[0])
+            # tar.extractall(path=bucket_dir_path)
+            tar.extractall(path=extract_dir)
+            # bucket_dir_path = temp_dir.joinpath(tar.getnames()[0])
+
+        # print(bucket_dir_path)
 
         # read manifest
-        with open(bucket_dir.joinpath('manifest.json'),'r') as f:
+        with open(extract_dir.joinpath('manifest.json'),'r') as f:
             manifest = json.load(f)
 
         # create new bucket
         self.create_bucket(bucket_name)
         bucket = self.get_bucket(bucket_name)
 
-        if not img_name:
+        if not img_repo:
             img_repo = manifest['image_repo']
-        else:
-            img_repo = 'earthcubeingeo/{}'.format(img_name)
+        full_repo = 'earthcubeingeo/{}'.format(img_repo)
+
         if not img_tag:
             img_tag = manifest['image_tag']
 
         # load image
-        img_id = self.dockerhelper.import_image(bucket_dir.joinpath(manifest['image']),img_repo,img_tag)
+        img_id = self.dockerhelper.import_image(extract_dir.joinpath(manifest['image']),full_repo,img_tag)
         # add image to bucket
-        # Don't really need the image or pull image fields, but there's errors if they're not set?
-        bucket['image'] = '{}:{}'.format(img_repo,img_tag)
-        bucket['image_id'] = img_id
-        bucket['pull_image'] = ''
+        bucket['image'] = {"version":img_tag,"repo":img_repo,"org":"earthcubeingeo","image_id":img_id,"repodigest":''}
 
         # add mounts to bucket
         for mount in manifest['mounts']:
             # extract mount from tar file
-            with tarfile.open(bucket_dir.joinpath(mount[0])) as tar:
-                tar.extractall(path=bucket_dir)
-                local = bucket_dir.joinpath(tar.getnames()[0])
+            with tarfile.open(extract_dir.joinpath(mount[0])) as tar:
+                tar.extractall(path=extract_dir)
+                local = extract_dir.joinpath(tar.getnames()[0])
             # add mount to bucket with original container path
             self.add_storage(bucket_name,local.as_posix(),mount[1],permissions=mount[2])
+
+        bucket['import_dir'] = str(extract_dir)
+        self.save_config()
 
         return
 

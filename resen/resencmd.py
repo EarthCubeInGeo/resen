@@ -18,6 +18,7 @@ import resen
 import socket
 import pathlib
 import os
+from pathlib import Path
 
 version = resen.__version__
 
@@ -228,7 +229,7 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
 
         try:
             print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
-            self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list, img_name=img_name, img_tag=img_tag)
+            self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list, img_repo=img_name, img_tag=img_tag)
         except (ValueError, RuntimeError) as e:
             print(e)
             return
@@ -250,14 +251,35 @@ import_bucket : Import a bucket from a .tgz file by providing input."""
             img_name = None
             img_tag = None
 
+        # default_import = Path(file_name).parent.joinpath('resen_{}'.format(bucket_name))
+        default_import = Path(file_name).resolve().with_name('resen_{}'.format(bucket_name))
+        print("The default directory to extract the bucket metadata and mounts to is {}.".format(default_import))
+        rsp = self.get_yn(">>> Would you like to specify and alternate directory? (y/n): ")
+        if rsp=='y':
+            extract_dir = self.get_valid_local_path('>>> Enter path to directory: ')
+        else:
+            extract_dir = None
+
+        # query for aditional mounts
+        mounts = list()
+        answer = self.get_yn('>>> Mount additional storage to the imported bucket? (y/n): ')
+        while answer == 'y':
+            local_path = self.get_valid_local_path('>>> Enter local path: ')
+            container_path = self.get_valid_container_path('>>> Enter bucket path: ','/home/jovyan/mount')
+            permissions = self.get_permissions('>>> Enter permissions (r/rw): ')
+            mounts.append([local_path,container_path,permissions])
+            answer = self.get_yn('>>> Mount additional storage to /home/jovyan/mount? (y/n): ')
+
         # should we start jupyterlab when done creating bucket?
         msg = '>>> Start bucket and jupyterlab? (y/n): '
         start = self.get_yn(msg) == 'y'
 
 
         try:
-            self.program.import_bucket(bucket_name, file_name, img_name=img_name, img_tag=img_tag)
+            self.program.import_bucket(bucket_name, file_name, extract_dir=extract_dir, img_repo=img_name, img_tag=img_tag)
             self.program.add_port(bucket_name)
+            for mount in mounts:
+                self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
             self.program.create_container(bucket_name, sudo=False)
         except (ValueError, RuntimeError) as e:
             print('Bucket import failed!')
