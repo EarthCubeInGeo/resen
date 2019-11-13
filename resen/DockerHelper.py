@@ -83,9 +83,7 @@ class DockerHelper():
         Start a container.
         '''
         # need to check if bucket config has changed since last run
-        print(bucket['container'])
         container = self.docker.containers.get(bucket['container'])
-        print(container.id)
         container.start()   # this does nothing if already started
         container.reload()
         # print(container.status)

@@ -464,7 +464,7 @@ class Resen():
 
         # raise error if bucket not running
         if bucket['status'] not in ['running']:
-            raise RuntimeError('Bucket %s is not running!' % (bucket['bucket']['name']))
+            raise RuntimeError('Bucket %s is not running!' % (bucket['name']))
 
         # execute command
         result = self.dockerhelper.execute_command(bucket,command,user=user,detach=detach)
