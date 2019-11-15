@@ -234,8 +234,9 @@ class DockerHelper():
         #   for the --size flag (https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.container), so the dict returned
         #   does not have size information
 
-        with docker.APIClient() as apiclient:
-            info = apiclient.containers(all=True, size=True, filters={'id':bucket['container']})[0]
+        # with docker.APIClient() as apiclient:
+        #     info = apiclient.containers(all=True, size=True, filters={'id':bucket['container']})[0]
+        info = self.docker.api.containers(all=True, size=True, filters={'id':bucket['container']})[0]
 
         return info['SizeRw']+info['SizeRootFs']
 
