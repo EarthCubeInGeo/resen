@@ -162,11 +162,23 @@ class Resen():
         if bucket['status'] == 'running':
             raise RuntimeError('ERROR: Bucket %s is running, cannot remove.' % (bucket['name']))
 
+        # are other buckets using the same image?
+        # if so, we shouldn't try to remove the image!
+        rm_image_id = bucket['image']['image_id']
+        buckets_with_same_id = list()
+        for x in self.buckets:
+            other_id = x['image']['image_id']
+            other_name = x['name']
+            if other_id == rm_image_id and other_name != bucket_name:
+                buckets_with_same_id.append(other_name)
+
+        remove_image = len(buckets_with_same_id) == 0
+
         # if docker container created, remove it first and update status
         if bucket['status'] in ['created','exited'] and bucket['container'] is not None:
             # if bucket imported, clean up by removing image and import directory
             if 'import_dir' in bucket:
-                self.dockerhelper.remove_container(bucket, remove_image=True)
+                self.dockerhelper.remove_container(bucket, remove_image=remove_image)
                 # also remove temporary import directory
                 shutil.rmtree(bucket['import_dir'])
             else:
