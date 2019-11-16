@@ -55,6 +55,7 @@ class Resen():
     def __init__(self):
 
         self.resen_root_dir = self._get_config_dir()
+        self.resen_home_dir = self._get_home_dir()
         self.__locked = False
         self.__lock()
 
@@ -916,6 +917,12 @@ class Resen():
             os.makedirs(configpath)
 
         return configpath
+
+    def _get_home_dir(self):
+        appname = 'resen'
+        homedir = os.path.expanduser('~')
+
+        return os.path.join(homedir,appname)
 
     def __lock(self):
         self.__lockfile = os.path.join(self.resen_root_dir,'lock')

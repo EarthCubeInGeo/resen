@@ -262,14 +262,26 @@ import : Import a bucket from a .tgz file by providing input."""
             img_name = None
             img_tag = None
 
-        # default_import = Path(file_name).parent.joinpath('resen_{}'.format(bucket_name))
-        default_import = Path(file_name).resolve().with_name('resen_{}'.format(bucket_name))
+        resen_home_dir = self.program.resen_home_dir
+        default_import = os.path.join(resen_home_dir,bucket_name)
         print("The default directory to extract the bucket metadata and mounts to is {}.".format(default_import))
         rsp = self.get_yn(">>> Would you like to specify and alternate directory? (y/n): ")
         if rsp=='y':
-            extract_dir = self.get_valid_local_path('>>> Enter path to directory: ')
+            while True:
+                extract_dir = self.get_valid_local_path('>>> Enter path to directory: ')
+                if not os.path.exists(extract_dir):
+                    try:
+                        os.makedirs(extract_dir)
+                        break
+                    except:
+                        print('Invalid: Directory cannot be created!')
+                else:
+                    dir_contents = os.listdir(extract_dir)
+                    if len(dir_contents) == 0:
+                        break
+                    print("Invalid: Directory must be empty!")
         else:
-            extract_dir = None
+            extract_dir = default_import
 
         # query for aditional mounts
         mounts = list()
