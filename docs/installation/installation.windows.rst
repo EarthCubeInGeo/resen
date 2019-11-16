@@ -10,17 +10,9 @@ Install Anaconda and Resen
 We recommend downloading and installing the Python 3 Anaconda Distribution (https://www.anaconda.com/distribution/). This simplifies the installation and usage of several common software tools needed to install and run Resen.
 
 **Resen**:
-Using the start menu search, open the "Anaconda Powershell Prompt" and navigate to a directory where you wish to host the Resen source code. Next, install Resen by first cloning the resen GitHub repo (https://github.com/EarthCubeInGeo/resen)::
+Using the start menu search, open the "Anaconda Powershell Prompt" and install Resen using ``pip``::
 
-    git clone https://github.com/EarthCubeInGeo/resen.git
-
-Change into the ``resen`` directory::
-
-    cd resen
-
-Finally, install Resen::
-
-    pip install .
+    pip install git+https://github.com/EarthCubeInGeo/resen.git@v2019.1.0
 
 Once complete, this will provide the command line command ``resen``. Next, we need to install Docker.
 
