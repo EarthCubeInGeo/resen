@@ -102,7 +102,7 @@ Setup a New Bucket
      Local          Bucket
      9002           9002
 
-At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage location.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
+At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage locations.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
 
 Work with a Bucket
 ------------------
@@ -211,9 +211,12 @@ Work with a Bucket
 
 Remove a Bucket
 ---------------
+**WARNING**: This will permanently delete the bucket. Any work that was not saved in a mounted storage directory or downloaded from the bucket will be **permanently lost**.
+
 The user can delete a bucket with the following command::
 
     [resen] >>> remove amber
 
-A bucket that is running needs to be stopped before removed.
-WARNING: This will permanently delete the bucket. Any work that was not saved in a mounted storage directory will be lost.
+A bucket that is running needs to be stopped before being removed.
+
+
