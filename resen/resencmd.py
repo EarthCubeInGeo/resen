@@ -51,10 +51,7 @@ create : Create a new bucket by responding to the prompts provided."""
 
         # Mounting persistent storage
         msg =  'Local directories can be mounted to /home/jovyan/mount in a bucket.  '
-        msg += 'You can specify either r or rw privileges  for each directory mounted.  '
-        msg += 'Nothing mounted will be included in an exported bucket.  Any scripts, data,'
-        msg += 'ect. that you would like to persist in an exported bucket MUST be copied '
-        msg += 'into another part of the bucket.'
+        msg += 'You can specify either r or rw privileges for each directory mounted.  '
         print(msg)
         mounts = list()
 

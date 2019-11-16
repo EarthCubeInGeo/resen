@@ -204,7 +204,7 @@ class Resen():
         # check that input is a valid image
         valid_versions = [x['version'] for x in self.valid_cores]
         if not docker_image in valid_versions:
-            raise ValueError("Invalid resen-core version %s. Valid version: %s" % (docker_image,', '.join(valid_versions)))
+            raise ValueError("Invalid resen-core version %s. Valid versions: %s" % (docker_image,', '.join(valid_versions)))
 
         ind = valid_versions.index(docker_image)
         image = self.valid_cores[ind]
@@ -283,7 +283,7 @@ class Resen():
 
         # if container created, cannot remove storage
         if bucket['status'] is not None:
-            raise RuntimeError("Bucket has already been started, cannot add storage: %s" % (local))
+            raise RuntimeError("Bucket has already been started, cannot remove storage: %s" % (local))
 
         # find index of storage
         existing_storage = [x[0] for x in bucket['storage']]
@@ -613,10 +613,10 @@ class Resen():
         bucket = self.get_bucket(bucket_name)
 
         # create temporary directory that will become the final bucket tar file
+        print('Exporting bucket: %s...' % str(bucket_name))
         with tempfile.TemporaryDirectory() as bucket_dir:
 
             bucket_dir_path = Path(bucket_dir)
-            print(bucket_dir_path)
 
             # try:
 
@@ -640,7 +640,9 @@ class Resen():
             # export container to image *.tar file
             image_file_name = '{}_image.tgz'.format(bucket_name)
             # status = self.dockerhelper.export_container(bucket, repo=repo, tag=img_tag, filename=bucket_dir.joinpath(image_file_name))
+            print('...exporting image...')
             status = self.dockerhelper.export_container(bucket, bucket_dir_path.joinpath(image_file_name), img_repo, img_tag)
+            print('...done')
             manifest['image'] = image_file_name
             manifest['image_repo'] = img_repo
             manifest['image_tag'] = img_tag
@@ -654,22 +656,23 @@ class Resen():
 
                 source_dir = Path(mount[0])
                 mount_file_name = '{}_mount.tgz'.format(source_dir.name)
+                print('...exporting mount: %s' % str(source_dir))
                 with tarfile.open(str(bucket_dir_path.joinpath(mount_file_name)), "w:gz", compresslevel=1) as tar:
-                    print(source_dir, source_dir.name)
                     tar.add(str(source_dir), arcname=source_dir.name)
 
                 manifest['mounts'].append([mount_file_name, mount[1], mount[2]])
 
             # save manifest file
+            print('...saving manifest')
             with open(str(bucket_dir_path.joinpath('manifest.json')),'w') as f:
                 json.dump(manifest, f)
 
             # save entire bucket as tar file
             with tarfile.open(outfile, 'w') as tar:
-                print(bucket_dir_path)
                 for f in os.listdir(str(bucket_dir_path)):
-                    print(bucket_dir_path.joinpath(f), f)
                     tar.add(str(bucket_dir_path.joinpath(f)), arcname=f)
+
+        print('...Bucket export complete!')
 
         # except (RuntimeError,tarfile.TarError) as e:
         #     raise RuntimeError('Bucket Export Failed: {}'.format(str(e)))
