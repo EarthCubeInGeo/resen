@@ -7,14 +7,14 @@ To use resen, simply enter ``resen`` at the command line::
 
 This will open the resen tool::
 
-        ___ ___ ___ ___ _  _ 
+        ___ ___ ___ ___ _  _
        | _ \ __/ __| __| \| |
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
-    
+
     Resen 2019.1.0rc2 -- Reproducible Software Environment
-    
-    [resen] >>> 
+
+    [resen] >>>
 
 Type ``help`` to see available commands::
 
@@ -24,8 +24,9 @@ This will produce a list of resen commands you will use to manage your resen buc
 
     Documented commands (type help <topic>):
     ========================================
-    EOF            exit  quit           start_jupyter  stop_jupyter
-    create_bucket  help  remove_bucket  status
+    EOF            export_bucket  quit           status
+    create_bucket  help           remove_bucket  stop_jupyter
+    exit           import_bucket  start_jupyter
 
 To get more information about a specific command, enter ``help <command>``.
 
@@ -50,10 +51,10 @@ Setup a New Bucket
    Next, the user is asked to specify the version of resen-core to use::
 
      Please choose a version of resen-core.
-     Available versions: 2019.1.0rc2
-     >>> Select a version: 2019.1.0.rc2
+     Available versions: 2019.1.0
+     >>> Select a version: 2019.1.0
 
-   Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/work``::
+   Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/mount``::
 
      Local directories can be mounted to either /home/jovyan/work or /home/jovyan/mount/ in
      a bucket. The /home/jovyan/work location is a workspace and /home/jovyan/mount/ is intended
@@ -61,16 +62,8 @@ Setup a New Bucket
      specify permissions as either r or rw for directories in mount. Code and data created in a
      bucket can ONLY be accessed outside the bucket or after the bucket has been deleted if it is
      saved in a mounted local directory.
-     >>> Mount storage to /home/jovyan/work? (y/n): y
-     >>> Enter local path: /some/local/path
-
-   Followed by additional local directories that can be mounted under ``/home/jovyan/mount``::
-
      >>> Mount storage to /home/jovyan/mount? (y/n): y
-     >>> Enter local path: /some/other/local/path
-     >>> Enter bucket path: /home/jovyan/mount/data001
-     >>> Enter permissions (r/rw): r
-     >>> Mount additional storage to /home/jovyan/mount? (y/n): n
+     >>> Enter local path: /some/local/path
 
    Finally, the user is asked if they want jupyterlab to be started::
 
@@ -79,15 +72,30 @@ Setup a New Bucket
    after which resen will begin creating the bucket. Example output for a new bucket named ``amber`` with jupyterlab started is::
 
      ...adding core...
+     ...adding ports...
      ...adding mounts...
      Bucket created successfully!
      ...starting jupyterlab...
-     Jupyter lab can be accessed in a browser at: http://localhost:9000/?token=61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a
+     Jupyter lab can be accessed in a browser at: http://localhost:9002/?token=e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
 
 2. Check the status of the bucket::
 
-    [resen] >>> status amber
-    {'bucket': {'name': 'amber'}, 'docker': {'image': '2019.1.0rc2', 'container': 'a6501d441a9f025dc7dd913bf6d531b6b452d0a3bd6d5bad0eedca791e1d92ca', 'port': [[9000, 9000, True]], 'storage': [['/some/local/path', '/home/jovyan/work', 'rw'], ['/some/other/local/path', '/home/jovyan/mount/data001', 'ro']], 'status': 'running', 'jupyter': {'token': '61469c2ccef5dd27dbf9a8ba7c296f40e04278a89e6cf76a', 'port': 9000}, 'image_id': 'sha256:3ba43e401c1b1a8eca8969aec8426a22d99bca349fd837270fa06dbcaefaeb47', 'pull_image': 'earthcubeingeo/resen-core@sha256:c3783e3b7f05ec17f9381a01009b794666107780d964e8087c62f7baaa00049d'}}
+  amber
+  =====
+
+  Resen-core Version:  2019.1.0
+  Status:  running
+  Jupyter Token:  e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
+  Jupyter Port:  9002
+  Jupyter lab URL: http://localhost:9002/?token=e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
+
+  Storage:
+  Local                                   Bucket                                  Permissions
+  /some/local/path                        /home/jovyan/mount/path                 rw
+
+  Ports:
+  Local          Bucket
+  9002           9002
 
 At this point, the bucket should have a name, an image, at least one port, and optionally one or more storage location.  Status should be ``running`` if the user decided to have jupyterlab started, otherwise the status will be ``None``.
 
@@ -127,6 +135,9 @@ Work with a Bucket
    The jupyter lab server starts in the ``/home/jovyan`` directory, which should include the persistent storage directories ``work`` and ``mount``.
    The user can alternate between the jupyter lab and the classic notebook view by changing the url in the browser from ``http://localhost:8000/lab`` to ``http://localhost:8000/tree``. Alternatively one can switch from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
 
+4. Export bucket ``amber`` including all modifications and mounted data and scripts.
+
+5. Import the bucket ``amber`` from a tar file.
 
 Remove a Bucket
 ---------------
