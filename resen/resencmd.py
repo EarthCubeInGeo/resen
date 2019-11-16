@@ -29,11 +29,8 @@ class ResenCmd(cmd.Cmd):
         cmd.Cmd.__init__(self)
         self.prompt = '[resen] >>> '
         self.program = resen
-        # get current state of buckets
 
-    # --------------- resen stuff --------------------
-    # try to create a bucket by guiding user
-    # if
+
     def do_create(self,args):
         """Usage:
 create : Create a new bucket by responding to the prompts provided."""
@@ -43,11 +40,9 @@ create : Create a new bucket by responding to the prompts provided."""
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
         # First, ask user about the bucket they want to create
-        # resen-core version?
         valid_versions = sorted([x['version'] for x in self.program.valid_cores])
         print('Please choose a version of resen-core.')
         docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
-
 
         # Mounting persistent storage
         msg =  'Local directories can be mounted to /home/jovyan/mount in a bucket.  '
@@ -106,6 +101,7 @@ remove bucket_name : Remove bucket named bucket_name."""
             print(e)
             return
 
+
     def do_list(self,args):
         """Usage:
 >>> list \t\t: List all resen buckets.
@@ -128,6 +124,7 @@ remove bucket_name : Remove bucket named bucket_name."""
 
         status = self.program.list_buckets(names_only=names_only)
 
+
     def do_status(self,args):
         """Usage:
 >>> status bucket_name \t: Print status of bucket with name "bucket_name"
@@ -143,6 +140,7 @@ remove bucket_name : Remove bucket named bucket_name."""
 
         status = self.program.list_buckets(names_only=names_only,bucket_name=bucket_name)
 
+
     def do_start(self,args):
         """Usage:
 >>> start bucket_name : Start jupyter on bucket bucket_name
@@ -155,10 +153,8 @@ remove bucket_name : Remove bucket named bucket_name."""
             print("Syntax Error. See 'help start_jupyter'.")
             return
 
-
         # get bucket name from input
         bucket_name = inputs[0]
-
         try:
             self.program.start_bucket(bucket_name) # does nothing if bucket already started
             self.program.start_jupyter(bucket_name)
@@ -246,6 +242,7 @@ export bucket_name: Export bucket to a sharable *.tar file."""
     def do_import(self,args):
         """Usage:
 import : Import a bucket from a .tgz file by providing input."""
+
         print('Please enter a name for your bucket.')
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
@@ -299,7 +296,8 @@ import : Import a bucket from a .tgz file by providing input."""
         remove_archive = self.get_yn(msg) == 'y'
 
         try:
-            self.program.import_bucket(bucket_name, file_name, extract_dir=extract_dir, img_repo=img_name, img_tag=img_tag)
+            self.program.import_bucket(bucket_name,file_name,extract_dir=extract_dir,
+                                       img_repo=img_name,img_tag=img_tag,remove_image_file=True)
             self.program.add_port(bucket_name)
             for mount in mounts:
                 self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
@@ -322,141 +320,6 @@ import : Import a bucket from a .tgz file by providing input."""
         if remove_archive:
             print("Deleting %s as requested." % str(file_name))
             os.remove(file_name)
-        # TODO:
-        # Have prompt for user to start bucket automatically?
-        # success = True
-        # print("...adding core...")
-        # status = self.program.add_image(bucket_name,docker_image)
-        # success = success and status
-        # if status:
-        #     status = self.program.add_port(bucket_name,local_port,container_port,tcp=True)
-        #     success = success and status
-        #     if status:
-        #         print("...adding mounts...")
-        #         for mount in mounts:
-        #             status = self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
-        #             success = success and status
-        #             if not status:
-        #                 print("    Failed to mount storage!")
-
-        # if success:
-        #     print("Bucket created successfully!")
-        #     if start:
-        #         # start bucket
-        #         status = self.program.start_bucket(bucket_name)
-        #         if not status:
-        #             return
-        #         # start jupyterlab
-        #         print("...starting jupyterlab...")
-        #         status = self.program.start_jupyter(bucket_name,local_port,container_port)
-        # else:
-        #     print("Failed to create bucket!")
-        #     status = self.program.remove_bucket(bucket_name)
-
-#     def do_start_bucket(self,args):
-#         """Usage:
-# start_bucket bucket_name : Start bucket named bucket_name."""
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 1:
-#             print("Syntax Error. Usage: start_bucket bucket_name")
-#             return
-
-#         bucket_name = inputs[0]
-#         status = self.program.start_bucket(bucket_name)
-
-#     def do_stop_bucket(self,args):
-#         """Usage:
-# stop_bucket bucket_name : Stop bucket named bucket_name."""
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 1:
-#             print("Syntax Error. Usage: stop_bucket bucket_name")
-#             return
-
-#         bucket_name = inputs[0]
-#         status = self.program.stop_bucket(bucket_name)
-
-#     def do_add_storage(self,args):
-#         """Usage:
-# >>> add_storage bucket_name local_path container_path permissions : Add a local_path storage location available at container_path.
-# use "" for paths with spaces in them
-# - permissions should be 'r' or 'rw'
-#         """
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 4:
-#             print("Syntax Error. Usage: add_storage bucket_name local_path container_path permissions")
-#             return
-#         bucket_name = inputs[0]
-#         local_path = inputs[1]
-#         container_path = inputs[2]
-#         permissions = inputs[3]
-
-#         status = self.program.add_storage(bucket_name,local_path,container_path,permissions)
-
-#     def do_remove_storage(self,args):
-#         """Usage:
-# >>> remove_storage bucket_name local_path : Remove the local_path storage location in bucket bucket_name.
-# use "" for paths with spaces in them
-#         """
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 2:
-#             print("Syntax Error. Usage: remove_storage bucket_name local_path")
-#             return
-#         bucket_name = inputs[0]
-#         local_path = inputs[1]
-
-#         status = self.program.remove_storage(bucket_name,local_path)
-
-#     def do_add_port(self,args):
-#         """Usage:
-# >>> add_port bucket_name local_port container_port\t: Map container_port available at local_port.
-# >>> add_port bucket_name local_port container_port --udp\t: Map container_port available at local_port.
-#         """
-#         inputs,num_inputs = self.parse_args(args)
-
-#         tcp = True
-#         if num_inputs == 3:
-#             pass
-#         elif num_inputs == 4:
-#             if inputs[3][0] == '-':
-#                 if inputs[3] == '--udp':
-#                     tcp = False
-#                 else:
-#                     print("Syntax Error. See 'help add_port'")
-#                     return
-#         else:
-#             print("Syntax Error. See 'help add_port'")
-#             return
-
-#         bucket_name = inputs[0]
-#         local_port = int(inputs[1])
-#         container_port = int(inputs[2])
-
-#         status = self.program.add_port(bucket_name,local_port,container_port,tcp=tcp)
-
-#     def do_remove_port(self,args):
-#         """Usage:
-# >>> remove_port bucket_name local_port : Remove the local_port mapping from bucket bucket_name.
-#         """
-#         inputs,num_inputs = self.parse_args(args)
-#         if num_inputs != 2:
-#             print("Syntax Error. Usage: remove_port bucket_name local_port")
-#             return
-#         bucket_name = inputs[0]
-#         local_port = int(inputs[1])
-
-#         status = self.program.remove_port(bucket_name,local_port)
-
-    # def do_import(self):
-    #     """import : Print the status of all resen buckets."""
-    #     pass
-
-    # def do_export(self):
-    #     """export : Print the status of all resen buckets."""
-    #     pass
-
-    # def do_freeze(self):
-    #     """freeze : Print the status of all resen buckets."""
-    #     pass
 
 
     def do_quit(self,arg):
@@ -531,6 +394,7 @@ import : Import a bucket from a .tgz file by providing input."""
             else:
                 print('Cannot find local path entered.')
 
+
     def get_valid_container_path(self,msg,base):
         while True:
             path = input(msg)
@@ -540,6 +404,7 @@ import : Import a bucket from a .tgz file by providing input."""
             else:
                 print("Invalid path. Must start with: {}".format(base))
 
+
     def get_permissions(self,msg):
         valid_inputs = ['r', 'rw']
         while True:
@@ -548,6 +413,7 @@ import : Import a bucket from a .tgz file by providing input."""
                 return answer
             else:
                 print("Invalid input. Valid input are {} or {}.".format(valid_inputs[0],valid_inputs[1]))
+
 
     def get_valid_tag(self,msg):
         while True:
@@ -604,5 +470,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()
