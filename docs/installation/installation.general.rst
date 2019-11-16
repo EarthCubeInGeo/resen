@@ -31,14 +31,7 @@ Docker CE is the recomended version of Docker to use with Resen.  `Installation 
 Resen
 =====
 
-Install Resen by first cloning the resen GitHub repo (https://github.com/EarthCubeInGeo/resen)::
+Install Resen from a python 3 environment using ``pip``::
 
-    git clone https://github.com/EarthCubeInGeo/resen.git
+    pip install git+https://github.com/EarthCubeInGeo/resen.git@v2019.1.0
 
-Change into the ``resen`` directory::
-
-    cd resen
-
-In a python 3 environment, use pip to install Resen::
-
-    pip install .
