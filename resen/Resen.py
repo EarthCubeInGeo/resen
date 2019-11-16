@@ -603,14 +603,15 @@ class Resen():
         # check size of mounts
         # check harddrive space for commit
 
+        # make sure the output filename has the .tgz or .tar.gz extension on it
+        name, ext = os.path.splitext(outfile)
+        if not ext == '.tar':
+            outfile = name + '.tar'
+
         # get bucket
         bucket = self.get_bucket(bucket_name)
 
         # create temporary directory that will become the final bucket tar file
-        # bucket_dir = Path(os.getcwd()).joinpath('resen_{}'.format(bucket_name))
-        # os.mkdir(bucket_dir)
-        # bucket_dir = tempfile.TemporaryDirectory()
-
         with tempfile.TemporaryDirectory() as bucket_dir:
 
             bucket_dir_path = Path(bucket_dir)
