@@ -23,7 +23,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='2019.1.0rc2',    #TODO: parse this from resen/__init__.py
+    version='2019.1.0',    #TODO: parse this from resen/__init__.py
 
     description='A python package for watching, copying, and transporting files around.',
     long_description=long_description,
