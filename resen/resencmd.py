@@ -262,13 +262,15 @@ import : Import a bucket from a .tgz file by providing input."""
         rsp = self.get_yn(">>> Would you like to specify and alternate directory? (y/n): ")
         if rsp=='y':
             while True:
-                extract_dir = self.get_valid_local_path('>>> Enter path to directory: ')
+                extract_dir = input('>>> Enter path to directory: ')
                 if not os.path.exists(extract_dir):
-                    try:
-                        os.makedirs(extract_dir)
-                        break
-                    except:
-                        print('Invalid: Directory cannot be created!')
+                    rsp = self.get_yn(">>> Directory does not exist. Create it? (y/n): ")
+                    if rsp=='y':
+                        try:
+                            os.makedirs(extract_dir)
+                            break
+                        except:
+                            print('Invalid: Directory cannot be created!')
                 else:
                     dir_contents = os.listdir(extract_dir)
                     if len(dir_contents) == 0:
