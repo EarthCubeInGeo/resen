@@ -198,7 +198,7 @@ class DockerHelper():
             # save image as *.tar file
             image = self.docker.images.get(image_name)
             out = image.save()
-            with open(filename, 'wb') as f:
+            with open(str(filename), 'wb') as f:
                 for chunk in out:
                     f.write(chunk)
 
@@ -219,7 +219,7 @@ class DockerHelper():
         Import an image from a tar file.  Return the image ID.
         '''
 
-        with open(filename, 'rb') as f:
+        with open(str(filename), 'rb') as f:
             image = self.docker.images.load(f)[0]
 
         # add tag
@@ -234,8 +234,9 @@ class DockerHelper():
         #   for the --size flag (https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.container), so the dict returned
         #   does not have size information
 
-        with docker.APIClient() as apiclient:
-            info = apiclient.containers(all=True, size=True, filters={'id':bucket['container']})[0]
+        # with docker.APIClient() as apiclient:
+        #     info = apiclient.containers(all=True, size=True, filters={'id':bucket['container']})[0]
+        info = self.docker.api.containers(all=True, size=True, filters={'id':bucket['container']})[0]
 
         return info['SizeRw']+info['SizeRootFs']
 

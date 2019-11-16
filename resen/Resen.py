@@ -652,22 +652,22 @@ class Resen():
 
                 source_dir = Path(mount[0])
                 mount_file_name = '{}_mount.tgz'.format(source_dir.name)
-                with tarfile.open(bucket_dir_path.joinpath(mount_file_name), "w:gz") as tar:
+                with tarfile.open(str(bucket_dir_path.joinpath(mount_file_name)), "w:gz") as tar:
                     print(source_dir, source_dir.name)
-                    tar.add(source_dir, arcname=source_dir.name)
+                    tar.add(str(source_dir), arcname=source_dir.name)
 
                 manifest['mounts'].append([mount_file_name, mount[1], mount[2]])
 
             # save manifest file
-            with open(bucket_dir_path.joinpath('manifest.json'),'w') as f:
+            with open(str(bucket_dir_path.joinpath('manifest.json')),'w') as f:
                 json.dump(manifest, f)
 
             # save entire bucket as tgz file
             with tarfile.open(outfile, 'w:gz') as tar:
                 print(bucket_dir_path)
-                for f in os.listdir(bucket_dir_path):
+                for f in os.listdir(str(bucket_dir_path)):
                     print(bucket_dir_path.joinpath(f), f)
-                    tar.add(bucket_dir_path.joinpath(f), arcname=f)
+                    tar.add(str(bucket_dir_path.joinpath(f)), arcname=f)
 
         # except (RuntimeError,tarfile.TarError) as e:
         #     raise RuntimeError('Bucket Export Failed: {}'.format(str(e)))
@@ -699,13 +699,13 @@ class Resen():
         # untar bucket file
         with tarfile.open(filename) as tar:
             # tar.extractall(path=bucket_dir_path)
-            tar.extractall(path=extract_dir)
+            tar.extractall(path=str(extract_dir))
             # bucket_dir_path = temp_dir.joinpath(tar.getnames()[0])
 
         # print(bucket_dir_path)
 
         # read manifest
-        with open(extract_dir.joinpath('manifest.json'),'r') as f:
+        with open(str(extract_dir.joinpath('manifest.json')),'r') as f:
             manifest = json.load(f)
 
         # create new bucket
@@ -727,8 +727,8 @@ class Resen():
         # add mounts to bucket
         for mount in manifest['mounts']:
             # extract mount from tar file
-            with tarfile.open(extract_dir.joinpath(mount[0])) as tar:
-                tar.extractall(path=extract_dir)
+            with tarfile.open(str(extract_dir.joinpath(mount[0]))) as tar:
+                tar.extractall(path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
             # add mount to bucket with original container path
             self.add_storage(bucket_name,local.as_posix(),mount[1],permissions=mount[2])
