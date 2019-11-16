@@ -34,9 +34,9 @@ class ResenCmd(cmd.Cmd):
     # --------------- resen stuff --------------------
     # try to create a bucket by guiding user
     # if
-    def do_create_bucket(self,args):
+    def do_create(self,args):
         """Usage:
-create_bucket : Create a new bucket by responding to the prompts provided."""
+create : Create a new bucket by responding to the prompts provided."""
 
         # First, ask user for bucket name
         print('Please enter a name for your bucket.')
@@ -94,9 +94,9 @@ create_bucket : Create a new bucket by responding to the prompts provided."""
             self.program.start_jupyter(bucket_name)
 
 
-    def do_remove_bucket(self,args):
+    def do_remove(self,args):
         """Usage:
-remove_bucket bucket_name : Remove bucket named bucket_name."""
+remove bucket_name : Remove bucket named bucket_name."""
         inputs,num_inputs = self.parse_args(args)
         if num_inputs != 1:
             print("Syntax Error. Usage: remove_bucket bucket_name")
@@ -109,15 +109,13 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
             print(e)
             return
 
-    def do_status(self,args):
+    def do_list(self,args):
         """Usage:
->>> status \t\t: Print the status of all resen buckets.
->>> status --names \t: Print only bucket names.
->>> status bucket_name \t: Print status of bucket with name "bucket_name"
+>>> list \t\t: List all resen buckets.
+>>> list --names \t: Print only bucket names.
         """
         inputs,num_inputs = self.parse_args(args)
         names_only = False
-        bucket_name = None
         if num_inputs == 0:
             pass
         elif num_inputs == 1:
@@ -127,17 +125,30 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
                 else:
                     print("Syntax Error. See 'help status'.")
                     return
-            else:
-                bucket_name = inputs[0]
+        else:
+            print("Syntax Error. See 'help status'.")
+            return
+
+        status = self.program.list_buckets(names_only=names_only)
+
+    def do_status(self,args):
+        """Usage:
+>>> status bucket_name \t: Print status of bucket with name "bucket_name"
+        """
+        inputs,num_inputs = self.parse_args(args)
+        names_only = False
+        bucket_name = None
+        if num_inputs == 1:
+            bucket_name = inputs[0]
         else:
             print("Syntax Error. See 'help status'.")
             return
 
         status = self.program.list_buckets(names_only=names_only,bucket_name=bucket_name)
 
-    def do_start_jupyter(self,args):
+    def do_start(self,args):
         """Usage:
->>> start_jupyter bucket_name : Start jupyter on bucket bucket_name
+>>> start bucket_name : Start jupyter on bucket bucket_name
         """
         inputs,num_inputs = self.parse_args(args)
 
@@ -159,9 +170,9 @@ remove_bucket bucket_name : Remove bucket named bucket_name."""
             return
 
 
-    def do_stop_jupyter(self,args):
+    def do_stop(self,args):
         """Usage:
-stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
+stop bucket_name : Stop jupyter on bucket bucket_name."""
         inputs,num_inputs = self.parse_args(args)
         if num_inputs != 1:
             print("Syntax Error. Usage: stop_bucket bucket_name")
@@ -176,9 +187,9 @@ stop_jupyter bucket_name : Stop jupyter on bucket bucket_name."""
             return
 
 
-    def do_export_bucket(self,args):
+    def do_export(self,args):
         """Usage:
-export_bucket bucket_name: Export bucket to a sharable *.tar file."""
+export bucket_name: Export bucket to a sharable *.tar file."""
         inputs,num_inputs = self.parse_args(args)
         if num_inputs != 1:
             print("Syntax Error. Usage: export_bucket bucket_name")
@@ -235,9 +246,9 @@ export_bucket bucket_name: Export bucket to a sharable *.tar file."""
             return
 
 
-    def do_import_bucket(self,args):
+    def do_import(self,args):
         """Usage:
-import_bucket : Import a bucket from a .tgz file by providing input."""
+import : Import a bucket from a .tgz file by providing input."""
         print('Please enter a name for your bucket.')
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
