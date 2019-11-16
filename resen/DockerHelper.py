@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import docker
+import gzip
 import time
+import docker
 import requests
 
 # all the docker commands wrapped up nicely
@@ -198,7 +199,8 @@ class DockerHelper():
             # save image as *.tar file
             image = self.docker.images.get(image_name)
             out = image.save()
-            with open(str(filename), 'wb') as f:
+            # with open(str(filename), 'wb') as f:
+            with gzip.open(str(filename),'wb',compresslevel=1) as f:
                 for chunk in out:
                     f.write(chunk)
 

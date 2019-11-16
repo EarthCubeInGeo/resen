@@ -637,7 +637,7 @@ class Resen():
             # image_name = '{}:{}'.format(repo,tag)
 
             # export container to image *.tar file
-            image_file_name = '{}_image.tar'.format(bucket_name)
+            image_file_name = '{}_image.tgz'.format(bucket_name)
             # status = self.dockerhelper.export_container(bucket, repo=repo, tag=img_tag, filename=bucket_dir.joinpath(image_file_name))
             status = self.dockerhelper.export_container(bucket, bucket_dir_path.joinpath(image_file_name), img_repo, img_tag)
             manifest['image'] = image_file_name
@@ -653,7 +653,7 @@ class Resen():
 
                 source_dir = Path(mount[0])
                 mount_file_name = '{}_mount.tgz'.format(source_dir.name)
-                with tarfile.open(str(bucket_dir_path.joinpath(mount_file_name)), "w:gz") as tar:
+                with tarfile.open(str(bucket_dir_path.joinpath(mount_file_name)), "w:gz", compresslevel=1) as tar:
                     print(source_dir, source_dir.name)
                     tar.add(str(source_dir), arcname=source_dir.name)
 
@@ -663,8 +663,8 @@ class Resen():
             with open(str(bucket_dir_path.joinpath('manifest.json')),'w') as f:
                 json.dump(manifest, f)
 
-            # save entire bucket as tgz file
-            with tarfile.open(outfile, 'w:gz') as tar:
+            # save entire bucket as tar file
+            with tarfile.open(outfile, 'w') as tar:
                 print(bucket_dir_path)
                 for f in os.listdir(str(bucket_dir_path)):
                     print(bucket_dir_path.joinpath(f), f)
