@@ -135,9 +135,78 @@ Work with a Bucket
    The jupyter lab server starts in the ``/home/jovyan`` directory, which should include the persistent storage directories ``work`` and ``mount``.
    The user can alternate between the jupyter lab and the classic notebook view by changing the url in the browser from ``http://localhost:8000/lab`` to ``http://localhost:8000/tree``. Alternatively one can switch from the lab to the notebook through Menu -> Help -> Launch Classic Notebook.
 
-4. Export bucket ``amber`` including all modifications and mounted data and scripts.
+4. Export bucket ``amber``::
 
-5. Import the bucket ``amber`` from a tar file.
+    [resen] >>> export_bucket amber
+
+  The ``export_bucket`` command will ask a series of question.  First, provide a name for the output *.tgz file::
+
+    >>> Enter name for output tgz file: /path/for/output/amber.tgz
+
+  If desired, change the default name and tag for the exported image::
+
+    By default, the output image will be named "amber" and tagged "latest".
+    >>> Would you like to change the name and tag? (y/n): y
+    >>> Image name: custom_name
+    >>> Image tag: custom_tag
+
+  Specify if you want all mounted directories to be included in the exported bucket.  Answering `n` to this query will allow you to see how large each mount is and specify which you would like to include.  Consider excluding any mounts that are not nessesary for the analysis to reduce the size of the output file::
+
+    The following local directories are mounted to the bucket (total 2212 MB):
+    /home/usr/mount1
+    /home/usr/mount2
+    /home/usr/mount3
+    >>> Would you like to include all of these in the exported bucket? (y/n): n
+    >>> Include /home/usr/mount1 [154.68095 MB]? (y/n): y
+    >>> Include /home/usr/mount2 [2005.28493 MB]? (y/n): y
+    >>> Include /home/usr/mount3 [53.59823 MB]? (y/n): y
+
+  Confirm that you want to continue with the export.  The values shown should be considered a "high-side" approximation and may not be the actual final size::
+
+    This export could require up to 13337 MB of disk space to complete and will produce an output file up to 4600 MB.
+    >>> Are you sure you would like to continue? (y/n): y
+    Exporting bucket amber.  This will take several minutes.
+
+5. Import the bucket ``amber2`` from a tar file::
+
+    [resen] >>> import_bucket
+
+  This command will also ask a series of questions.  First provide a name for the imported bucket::
+
+    Please enter a name for your bucket.
+    Valid names may not contain spaces and must start with a letter and be less than 20 characters long.
+    >>> Enter bucket name: amber2
+
+  Specify the *.tgz file to import the bucket from::
+
+    >>> Enter name for input tar file: /path/to/file/amber.tgz
+
+  If desired, enter a custom image name and tag.  If not provided, the name an image saved on export will be used::
+
+    >>> Would you like to keep the default name and tag for the imported image? (y/n): n
+    >>> Image name: amber2
+    >>> Image tag: new_tag
+
+  When a bucket that had mounts is imported, the mounted directories must be extracted and saved on the local machine.  Resen will do this automatically, but you have the option to specify where these files should be saved instead of the default location::
+
+    The default directory to extract the bucket metadata and mounts to is /default/save/path/resen_amber2.
+    >>> Would you like to specify and alternate directory? (y/n): y
+    >>> Enter path to directory: /new_save_path
+
+  Aside from the existing mounts, you can add new mounts to a imported bucket.  This is useful if you would like to repeat the analysis with a different dataset::
+
+    >>> Mount additional storage to the imported bucket? (y/n): y
+    >>> Enter local path: /new/local/path/new_mount
+    >>> Enter bucket path: /home/jovyan/mount/new_mount
+    >>> Enter permissions (r/rw): r
+    >>> Mount additional storage to /home/jovyan/mount? (y/n): n
+
+  Similar to ``create_bucket``, you have the option to start jupyter lab immediately after the bucket is imported::
+
+    >>> Start bucket and jupyterlab? (y/n): y
+    ...starting jupyterlab...
+    Jupyter lab can be accessed in a browser at: http://localhost:9003/?token=70532767bab0ddc4febe2790efaaf974961e961e78e6025a
+
 
 Remove a Bucket
 ---------------
