@@ -197,7 +197,7 @@ export bucket_name: Export bucket to a sharable *.tar file."""
 
         bucket_name = inputs[0]
 
-        file_name = self.get_valid_local_path('>>> Enter name for output tgz file: ', file=True)
+        file_name = self.get_valid_local_path('>>> Enter name for output tgz file: ', is_file=True)
 
         print('By default, the output image will be named "{}" and tagged "latest".'.format(bucket_name.lower()))
         rsp = self.get_yn(">>> Would you like to change the name and tag? (y/n): ")
@@ -252,7 +252,7 @@ import : Import a bucket from a .tgz file by providing input."""
         print('Please enter a name for your bucket.')
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
-        file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', file=True)
+        file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', is_file=True)
 
         rsp = self.get_yn(">>> Would you like to keep the default name and tag for the imported image? (y/n): ")
         if rsp=='n':
@@ -505,13 +505,13 @@ import : Import a bucket from a .tgz file by providing input."""
                 print("Invalid version. Available versions: {}".format(", ".join(valid_versions)))
 
 
-    def get_valid_local_path(self,msg,file=False):
+    def get_valid_local_path(self,msg,is_file=False):
         while True:
             path = input(msg)
             path = pathlib.PurePosixPath(path)
             if os.path.isdir(str(path)):
                 return str(path)
-            elif file and os.path.isdir(str(path.parent)):
+            elif is_file and os.path.isdir(str(path.parent)):
                 return str(path)
             else:
                 print('Cannot find local path entered.')
