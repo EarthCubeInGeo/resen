@@ -303,7 +303,7 @@ import : Import a bucket from a .tgz file by providing input."""
             self.program.add_port(bucket_name)
             for mount in mounts:
                 self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
-            self.program.create_container(bucket_name, sudo=False)
+            self.program.create_container(bucket_name, give_sudo=False)
         except (ValueError, RuntimeError) as e:
             print('Bucket import failed!')
             print(e)

@@ -375,7 +375,7 @@ class Resen():
             else:
                 port += 1
 
-    def create_container(self, bucket_name, sudo=True):
+    def create_container(self, bucket_name, give_sudo=True):
 
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -389,7 +389,7 @@ class Resen():
         bucket['status'] = status
         self.save_config()
 
-        if sudo:
+        if give_sudo:
             # start bucket and execute any commands needed for proper set-up
             self.start_bucket(bucket_name)
             # run commands to set up sudo for jovyan
