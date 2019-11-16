@@ -297,6 +297,9 @@ import : Import a bucket from a .tgz file by providing input."""
         msg = '>>> Start bucket and jupyterlab? (y/n): '
         start = self.get_yn(msg) == 'y'
 
+        # should we clean up the bucket archive?
+        msg = '>>> Remove %s after successful import? (y/n): ' % str(file_name)
+        remove_archive = self.get_yn(msg) == 'y'
 
         try:
             self.program.import_bucket(bucket_name, file_name, extract_dir=extract_dir, img_repo=img_name, img_tag=img_tag)
@@ -319,6 +322,9 @@ import : Import a bucket from a .tgz file by providing input."""
                 print(e)
                 return
 
+        if remove_archive:
+            print("Deleting %s as requested." % str(file_name))
+            os.remove(file_name)
         # TODO:
         # Have prompt for user to start bucket automatically?
         # success = True
