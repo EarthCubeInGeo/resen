@@ -894,13 +894,7 @@ class Resen():
         # TODO: download json file from resen-core github repo
         #       and if that fails, fallback to hardcoded list
         # LJL:2019-10-07: Hardcoded in new resen-lite image for testing purposes - not available on docker hub yet
-        return [{"version":"2019.1.0rc2","repo":"resen-core","org":"earthcubeingeo",
-                 "image_id":'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
-                 "repodigest":'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2'},
-                {"version":"old","repo":"resen-core","org":"earthcubeingeo",
-                 "image_id":'sha256:ea19161343fca08afbb859359d8c0e7f8276819dd959695fd774636819b11dbf',
-                 "repodigest":''},
-                {"version":"2019.1.0","repo":"resen-core","org":"earthcubeingeo",
+        return [{"version":"2019.1.0","repo":"resen-core","org":"earthcubeingeo",
                  "image_id":'sha256:5300c6652851f35d2fabf866491143f471a7e121998fba27a8dff6b3c064af35',
                  "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},]
 
