@@ -240,7 +240,7 @@ class Resen():
 
         # if docker toolbox, change path to be the docker VM path instead of the host machine path
         if self.win_vbox_map:
-            local = local.replace(self.win_vbox_map[0],self.win_vbox_map[1])
+            local = Path(local.replace(self.win_vbox_map[0],self.win_vbox_map[1])).as_posix()
 
         # check if input locations already exist in bucket list of storage
         existing_local = [x[0] for x in bucket['storage']]
@@ -291,7 +291,7 @@ class Resen():
 
         # if docker toolbox, change path to be the docker VM path instead of the host machine path
         if self.win_vbox_map:
-            local = local.replace(self.win_vbox_map[0],self.win_vbox_map[1])
+            local = Path(local.replace(self.win_vbox_map[0],self.win_vbox_map[1])).as_posix()
 
         # find index of storage
         existing_storage = [x[0] for x in bucket['storage']]
