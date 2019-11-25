@@ -63,6 +63,9 @@ class Resen():
         self.load_config()
         self.valid_cores = self.__get_valid_cores()
         self.selinux = self.__detect_selinux()
+
+        self.win_vbox_map = None       # resencmd sets this if user specifies windows docker toolbox
+
         ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
         ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
         ### mount to an illegal location but the user might.
@@ -879,6 +882,9 @@ class Resen():
                 return False
         except FileNotFoundError:
             return False
+
+    def __detect_winvbox(self):
+        pass
 
 
     def __trim(self,string,length):

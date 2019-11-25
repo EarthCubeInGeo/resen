@@ -20,6 +20,8 @@ import pathlib
 import os
 from pathlib import Path
 
+import platform   # NEEDED FOR WINDOWS QUICK FIX
+
 version = resen.__version__
 
 
@@ -468,7 +470,18 @@ def main():
         print("ERROR: another instance of Resen is already running!")
         sys.exit(1)
 
+    # quick fix for determining windows with docker tool box
+    if platform.system().startswith('Win'):
+    # if True:
+        rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
+        if rsp == 'y':
+            print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
+            hostpath = input('Host machine path: ')
+            vmpath = input('Docker VM path: ')
+            res.win_vbox_map = [hostpath,vmpath]
+
     ResenCmd(res).cmdloop(intro)
+
 
 
 if __name__ == '__main__':
