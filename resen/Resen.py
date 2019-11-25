@@ -234,6 +234,14 @@ class Resen():
         if bucket['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot add storage: %s" % (local))
 
+        # check that local file path exists
+        if not Path(local).is_dir():
+            raise FileNotFoundError('Cannot find local storage location!')
+
+        # if docker toolbox, change path to be the docker VM path instead of the host machine path
+        if self.win_vbox_map:
+            local = local.replace(self.win_vbox_map[0],self.win_vbox_map[1])
+
         # check if input locations already exist in bucket list of storage
         existing_local = [x[0] for x in bucket['storage']]
         if local in existing_local:
@@ -241,10 +249,6 @@ class Resen():
         existing_container = [x[1] for x in bucket['storage']]
         if container in existing_container:
             raise FileExistsError('Container storage location already in use in bucket!')
-
-        # check that local file path exists
-        if not Path(local).is_dir():
-            raise FileNotFoundError('Cannot find local storage location!')
 
         # check that user is mounting in a whitelisted location
         valid = False
@@ -284,6 +288,10 @@ class Resen():
         # if container created, cannot remove storage
         if bucket['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot remove storage: %s" % (local))
+
+        # if docker toolbox, change path to be the docker VM path instead of the host machine path
+        if self.win_vbox_map:
+            local = local.replace(self.win_vbox_map[0],self.win_vbox_map[1])
 
         # find index of storage
         existing_storage = [x[0] for x in bucket['storage']]

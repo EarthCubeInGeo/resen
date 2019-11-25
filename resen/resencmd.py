@@ -472,7 +472,6 @@ def main():
 
     # quick fix for determining windows with docker tool box
     if platform.system().startswith('Win'):
-    # if True:
         rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
         if rsp == 'y':
             print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
