@@ -370,13 +370,22 @@ class Resen():
         port = 9000
         assigned_ports = [y[0] for x in self.buckets for y in x['port']]
 
+        port_debug = []
         while True:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                assigned = s.connect_ex(('localhost', port)) == 0
-            if not assigned and not port in assigned_ports:
-                return port
-            else:
+            if port in assigned_ports:
                 port += 1
+                continue
+
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind(('localhost', port))
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    return port
+                except Exception as e:
+                    print(port, str(e))
+                    port +=1
+
+        print(port_debug)
 
 
     def create_container(self, bucket_name, give_sudo=True):
