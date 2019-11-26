@@ -78,6 +78,7 @@ class Resen():
         '''
         # define config file name
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
+        print(bucket_config)
 
         # TODO: handle exceptions due to file reading problems (incorrect file permissions)
         # TODO: update status of buckets to double check that status is the same as in bucket.json
@@ -727,7 +728,7 @@ class Resen():
                 tar.extractall(path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
             # add mount to bucket with original container path
-            self.add_storage(bucket_name,local.as_posix(),mount[1],permissions=mount[2])
+            self.add_storage(bucket_name,str(local),mount[1],permissions=mount[2])
 
         bucket['import_dir'] = str(extract_dir)
         self.save_config()
