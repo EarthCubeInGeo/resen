@@ -41,6 +41,8 @@ import tempfile    # use this to get unique name for docker container
 import webbrowser  # use this to open web browser
 from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
+import platform   # NEEDED FOR WINDOWS QUICK FIX
+
 
 from .DockerHelper import DockerHelper
 
@@ -64,7 +66,8 @@ class Resen():
         self.valid_cores = self.__get_valid_cores()
         self.selinux = self.__detect_selinux()
 
-        self.win_vbox_map = None       # resencmd sets this if user specifies windows docker toolbox
+        # self.win_vbox_map = None       # resencmd sets this if user specifies windows docker toolbox
+        self.win_vbox_map = self.__get_win_vbox_map()
 
         ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
         ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
@@ -900,8 +903,17 @@ class Resen():
         except FileNotFoundError:
             return False
 
-    def __detect_winvbox(self):
-        pass
+    def __get_win_vbox_map(self):
+        # quick fix for determining windows with docker tool box
+        if platform.system().startswith('Win'):
+            rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
+            if rsp == 'y':
+                print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
+                hostpath = input('Host machine path: ')
+                vmpath = input('Docker VM path: ')
+
+                return [hostpath,vmpath]
+
 
 
     def __trim(self,string,length):
