@@ -78,7 +78,6 @@ class Resen():
         '''
         # define config file name
         bucket_config = os.path.join(self.resen_root_dir,'buckets.json')
-        print(bucket_config)
 
         # TODO: handle exceptions due to file reading problems (incorrect file permissions)
         # TODO: update status of buckets to double check that status is the same as in bucket.json

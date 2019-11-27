@@ -248,7 +248,7 @@ import : Import a bucket from a .tgz file by providing input."""
         print('Please enter a name for your bucket.')
         bucket_name = self.get_valid_name('>>> Enter bucket name: ')
 
-        file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', is_file=True)
+        file_name = self.get_valid_local_path('>>> Enter name for input tar file: ', pathtype='file')
 
         rsp = self.get_yn(">>> Would you like to keep the default name and tag for the imported image? (y/n): ")
         if rsp=='n':
@@ -291,18 +291,22 @@ import : Import a bucket from a .tgz file by providing input."""
             mounts.append([local_path,container_path,permissions])
             answer = self.get_yn('>>> Mount additional storage to /home/jovyan/mount? (y/n): ')
 
-        # should we start jupyterlab when done creating bucket?
-        msg = '>>> Start bucket and jupyterlab? (y/n): '
-        start = self.get_yn(msg) == 'y'
-
         # should we clean up the bucket archive?
         msg = '>>> Remove %s after successful import? (y/n): ' % str(file_name)
         remove_archive = self.get_yn(msg) == 'y'
 
+        # should we start jupyterlab when done creating bucket?
+        msg = '>>> Start bucket and jupyterlab? (y/n): '
+        start = self.get_yn(msg) == 'y'
+
         try:
+            print('Importing bucket %s.  This may take several mintues.' % bucket_name)
+            print("...extracting bucket...")
             self.program.import_bucket(bucket_name,file_name,extract_dir=extract_dir,
                                        img_repo=img_name,img_tag=img_tag,remove_image_file=True)
+            print("...adding ports...")
             self.program.add_port(bucket_name)
+            print("...adding mounts...")
             for mount in mounts:
                 self.program.add_storage(bucket_name,mount[0],mount[1],mount[2])
             self.program.create_container(bucket_name, give_sudo=False)
@@ -387,13 +391,14 @@ import : Import a bucket from a .tgz file by providing input."""
                 print("Invalid version. Available versions: {}".format(", ".join(valid_versions)))
 
 
-    def get_valid_local_path(self,msg,is_file=False):
+    def get_valid_local_path(self,msg,pathtype='directory'):
         while True:
             path = input(msg)
-            path = pathlib.PurePosixPath(path)
-            if os.path.isdir(str(path)):
-                return str(path)
-            elif is_file and os.path.isdir(str(path.parent)):
+            path = pathlib.Path(path)
+
+            # define different checks for different types of path
+            check = {'directory':path.is_dir(),'file':path.is_file(),'potfile':path.parent.is_dir()}
+            if check[pathtype]:
                 return str(path)
             else:
                 print('Cannot find local path entered.')
