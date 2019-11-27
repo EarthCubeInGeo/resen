@@ -905,7 +905,9 @@ class Resen():
 
     def __get_win_vbox_map(self):
         # quick fix for determining windows with docker tool box
-        if platform.system().startswith('Win'):
+        # if platform.system().startswith('Win'):
+        if True:
+            print('If your are unsure of the appropriate responses below, please refer to the Resen documentation (https://resen.readthedocs.io/en/latest/installation/installation.windows.html#docker) for more details and assistance.')
             rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
             if rsp == 'y':
                 print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
