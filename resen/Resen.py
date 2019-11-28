@@ -373,7 +373,6 @@ class Resen():
         port = 9000
         assigned_ports = [y[0] for x in self.buckets for y in x['port']]
 
-        port_debug = []
         while True:
             if port in assigned_ports:
                 port += 1
@@ -387,8 +386,6 @@ class Resen():
                 except Exception as e:
                     print(port, str(e))
                     port +=1
-
-        print(port_debug)
 
 
     def create_container(self, bucket_name, give_sudo=True):
