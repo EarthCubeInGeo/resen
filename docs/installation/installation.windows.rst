@@ -49,12 +49,12 @@ Add a new port forwarding rule by navigating to Settings->Network->Adapter 1->Ad
 
 Here, we need to add a port forwarding rule for each bucket we create in Resen. Resen requires port 9000 for one bucket and then increments by 1 for every new bucket created. This means that if you have 5 buckets, you will need to make a port forward rule for ports 9000, 9001, 9002, 9003, and 9004. Change both the Host and Guest Ports as seen in the above screenshot.
 
-Now we can optionally add Shared Folders. By default, Docker Toolbox shares the ``C:\Users`` directory with the Docker VM at ``/c/Users``. This means that directories in ``C:\Users`` will be available to mount into a Resen bucket via the ``/c/Users`` Shared Folder in VirtualBox. If additional shared directory locations are desired add them. For example:
+Now we can optionally add Shared Folders. By default, Docker Toolbox shares the ``C:\Users`` directory with the Docker VM at ``/c/Users``. If additional shared directory locations are desired add them. For example:
 
 .. image:: images/shared_folder.png
 .. image:: images/add_shared_folder.png
 
-makes an additional location, ``D:\ashto`` available to the Docker VM at the location ``/d/ashto`` so that any directories in ``D:\ashto`` can be mounted into a resen bucket via ``/d/ashto``. After adding or removing Shared Folders, you must restart the Docker VM. This can be done by running:
+makes an additional location, ``D:\ashto`` available to the Docker VM at the location ``/d/ashto``.  After adding or removing Shared Folders, you must restart the Docker VM. This can be done by running:
 
 	docker-machine restart
 
@@ -64,6 +64,22 @@ in the "Docker Quickstart Terminal".
 
 **Running Resen**
 
-Now you can run Resen! To do this, open an "Anaconda Powershell Prompt" and type "resen" and hit enter! You should see something similar to:
+Now you can run Resen! To do this, open an "Anaconda Powershell Prompt" and type "resen" and hit enter. A prompt should appear that asks if you are using Docker Toolbox::
+
+  Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n):
+
+If you installed Docker Desktop for Windows, enter ``n``.  If you set up Docker Toolbox as described above enter ``y``.  If you respond ``y``, you will be asked to specify the mapping between shared folders on the host machine and the Docker VM.  This is referring to the Shared Folders set up in step 3 above.  If you did not modify the default shared folder, the correct response should be::
+
+  Please specify the mapping between shared folders on the host machine and the Docker VM.
+  Host machine path: C:\Users
+  Docker VM path: /c/Users
+
+This will be different if you have made a different location available to the Docker VM, such as ``D:\ashto`` as described above.  In this case, the correct response will be::
+
+  Please specify the mapping between shared folders on the host machine and the Docker VM.
+  Host machine path: D:\ashto
+  Docker VM path: /d/ashto
+
+Now Resen should be configured and ready to go!  You should see something similar to:
 
 .. image:: images/resen_cmd.png
