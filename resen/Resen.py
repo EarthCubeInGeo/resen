@@ -41,6 +41,8 @@ import tempfile    # use this to get unique name for docker container
 import webbrowser  # use this to open web browser
 from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
+import platform   # NEEDED FOR WINDOWS QUICK FIX
+
 
 from .DockerHelper import DockerHelper
 
@@ -63,6 +65,10 @@ class Resen():
         self.load_config()
         self.valid_cores = self.__get_valid_cores()
         self.selinux = self.__detect_selinux()
+
+        # self.win_vbox_map = None       # resencmd sets this if user specifies windows docker toolbox
+        self.win_vbox_map = self.__get_win_vbox_map()
+
         ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
         ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
         ### mount to an illegal location but the user might.
@@ -231,6 +237,14 @@ class Resen():
         if bucket['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot add storage: %s" % (local))
 
+        # check that local file path exists
+        if not Path(local).is_dir():
+            raise FileNotFoundError('Cannot find local storage location!')
+
+        # if docker toolbox, change path to be the docker VM path instead of the host machine path
+        if self.win_vbox_map:
+            local = Path(local.replace(self.win_vbox_map[0],self.win_vbox_map[1])).as_posix()
+
         # check if input locations already exist in bucket list of storage
         existing_local = [x[0] for x in bucket['storage']]
         if local in existing_local:
@@ -238,10 +252,6 @@ class Resen():
         existing_container = [x[1] for x in bucket['storage']]
         if container in existing_container:
             raise FileExistsError('Container storage location already in use in bucket!')
-
-        # check that local file path exists
-        if not Path(local).is_dir():
-            raise FileNotFoundError('Cannot find local storage location!')
 
         # check that user is mounting in a whitelisted location
         valid = False
@@ -281,6 +291,10 @@ class Resen():
         # if container created, cannot remove storage
         if bucket['status'] is not None:
             raise RuntimeError("Bucket has already been started, cannot remove storage: %s" % (local))
+
+        # if docker toolbox, change path to be the docker VM path instead of the host machine path
+        if self.win_vbox_map:
+            local = Path(local.replace(self.win_vbox_map[0],self.win_vbox_map[1])).as_posix()
 
         # find index of storage
         existing_storage = [x[0] for x in bucket['storage']]
@@ -360,12 +374,18 @@ class Resen():
         assigned_ports = [y[0] for x in self.buckets for y in x['port']]
 
         while True:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                assigned = s.connect_ex(('localhost', port)) == 0
-            if not assigned and not port in assigned_ports:
-                return port
-            else:
+            if port in assigned_ports:
                 port += 1
+                continue
+
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind(('localhost', port))
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    return port
+                except Exception as e:
+                    print(port, str(e))
+                    port +=1
 
 
     def create_container(self, bucket_name, give_sudo=True):
@@ -707,7 +727,7 @@ class Resen():
                 tar.extractall(path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
             # add mount to bucket with original container path
-            self.add_storage(bucket_name,local.as_posix(),mount[1],permissions=mount[2])
+            self.add_storage(bucket_name,str(local),mount[1],permissions=mount[2])
 
         bucket['import_dir'] = str(extract_dir)
         self.save_config()
@@ -879,6 +899,20 @@ class Resen():
                 return False
         except FileNotFoundError:
             return False
+
+    def __get_win_vbox_map(self):
+        # quick fix for determining windows with docker tool box
+        # if platform.system().startswith('Win'):
+        if True:
+            print('If your are unsure of the appropriate responses below, please refer to the Resen documentation (https://resen.readthedocs.io/en/latest/installation/installation.windows.html#docker) for more details and assistance.')
+            rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
+            if rsp == 'y':
+                print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
+                hostpath = input('Host machine path: ')
+                vmpath = input('Docker VM path: ')
+
+                return [hostpath,vmpath]
+
 
 
     def __trim(self,string,length):
