@@ -227,16 +227,17 @@ export bucket_name: Export bucket to a sharable *.tar file."""
         required = max(report['container']*3., output*2.)
 
         print('This export could require up to %s MB of disk space to complete and will produce an output file up to %s MB.' % (int(required), int(output)))
-        # msg = '>>> Are you sure you would like to continue? (y/n): '
         rsp = self.get_yn('>>> Are you sure you would like to continue? (y/n): ')
-
-
-        try:
-            print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
-            self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list, img_repo=img_name, img_tag=img_tag)
-        except (ValueError, RuntimeError) as e:
-            print(e)
+        if rsp == 'n':
+            print('Export bucket canceled!')
             return
+        else:
+            try:
+                print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
+                self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list, img_repo=img_name, img_tag=img_tag)
+            except (ValueError, RuntimeError) as e:
+                print(e)
+                return
 
 
     def do_import(self,args):
