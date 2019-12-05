@@ -11,10 +11,10 @@ Python (https://www.python.org/) is an open source, interpreted programming lang
 Docker
 ======
 
-Docker CE is the recomended version of Docker to use with Resen.  `Installation instructions <https://docs.docker.com/install/>`_ can be found in the docker documentation.  Please read installation instructions carefully! For convenience, some OS specific links are provided below:
+Docker CE is the recommended version of Docker to use with Resen.  `Installation instructions <https://docs.docker.com/install/>`_ can be found in the docker documentation.  Please read installation instructions carefully! For convenience, some OS specific links are provided below:
 
 | **MacOS**: `Install Docker Desktop for Mac <https://docs.docker.com/docker-for-mac/install/>`_
-| Important! Docker Desktop is only for MacOS 10.10 Yosemite and later.  Earlier versions of MacOS should install `Docker Toolbox <https://docs.docker.com/toolbox/toolbox_install_mac/>`_.
+| Important! Docker Desktop only supports the latest two versions of MacOS.  Earlier versions of MacOS should install `Docker Toolbox <https://docs.docker.com/toolbox/toolbox_install_mac/>`_.
 
 | **Windows**: `Install Docker Desktop for Windows <https://docs.docker.com/docker-for-windows/install/>`_
 | Important! If you are already using virtualbox, do NOT install Docker Desktop.  Instead, install `Docker Toolbox <https://docs.docker.com/toolbox/toolbox_install_windows/>`_.
@@ -34,4 +34,3 @@ Resen
 Install Resen from a python 3 environment using ``pip``::
 
     pip install git+https://github.com/EarthCubeInGeo/resen.git@v2019.1.0
-
