@@ -190,7 +190,7 @@ export bucket_name: Export bucket to a sharable *.tar file."""
 
         bucket_name = inputs[0]
 
-        file_name = self.get_valid_local_path('>>> Enter name for output tgz file: ', is_file=True)
+        file_name = self.get_valid_local_path('>>> Enter name for output tar file: ', pathtype='potfile')
 
         print('By default, the output image will be named "{}" and tagged "latest".'.format(bucket_name.lower()))
         rsp = self.get_yn(">>> Would you like to change the name and tag? (y/n): ")
