@@ -12,7 +12,7 @@ We recommend downloading and installing the Python 3 Anaconda Distribution (http
 **Resen**:
 Using the start menu search, open the "Anaconda Powershell Prompt" and install Resen using ``pip``::
 
-    pip install git+https://github.com/EarthCubeInGeo/resen.git@v2019.1.0
+    pip install git+https://github.com/EarthCubeInGeo/resen.git@v2019.1.1
 
 Once complete, this will provide the command line command ``resen``. Next, we need to install Docker.
 
