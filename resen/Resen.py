@@ -831,11 +831,16 @@ class Resen():
 
 
     def __get_valid_cores(self):
-        # TODO: download json file from resen-core github repo
-        #       and if that fails, fallback to hardcoded list
-        return [{"version":"2019.1.0","repo":"resen-core","org":"earthcubeingeo",
-                 "image_id":'sha256:5300c6652851f35d2fabf866491143f471a7e121998fba27a8dff6b3c064af35',
-                 "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},]
+
+        # define core list file name
+        core_list = os.path.join(self.resen_root_dir,'cores.json')
+
+        # check if buckets.json exists, if not, initialize empty dictionary
+        with open(core_list,'r') as f:
+            cores = json.load(f)
+
+        return cores
+
 
 
     def _get_config_dir(self):
