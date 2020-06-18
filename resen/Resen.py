@@ -726,6 +726,8 @@ class Resen():
             with tarfile.open(str(extract_dir.joinpath(mount[0]))) as tar:
                 tar.extractall(path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
+            # remove mount tar file
+            os.remove(str(extract_dir.joinpath(mount[0])))
             # add mount to bucket with original container path
             self.add_storage(bucket_name,str(local),mount[1],permissions=mount[2])
 
