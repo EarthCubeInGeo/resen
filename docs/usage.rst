@@ -208,6 +208,11 @@ Work with a Bucket
     ...starting jupyterlab...
     Jupyter lab can be accessed in a browser at: http://localhost:9003/?token=70532767bab0ddc4febe2790efaaf974961e961e78e6025a
 
+Sudo-enabled buckets
+--------------------
+
+When starting a bucket with resen, `sudo` is enabled for the jovyan user to allow special installation and configuration
+where root security privileges are needed. The password for running `sudo` commands with user jovyan is: `ganimede`.
 
 Remove a Bucket
 ---------------
