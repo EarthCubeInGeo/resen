@@ -104,12 +104,12 @@ class DockerHelper():
         return container.status
 
 
-    def execute_command(self,bucket,command,user='jovyan',detach=True):
+    def execute_command(self,bucket,command,user='jovyan',detach=True,tty=False):
         '''
         Execute a command in a container.  Returns the exit code and output
         '''
         container = self.docker.containers.get(bucket['container'])
-        result = container.exec_run(command,user=user,detach=detach)
+        result = container.exec_run(command,user=user,detach=detach,tty=tty)
         return result.exit_code, result.output
 
 

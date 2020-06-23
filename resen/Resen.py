@@ -461,7 +461,7 @@ class Resen():
         return
 
 
-    def execute_command(self,bucket_name,command,user='jovyan',detach=True):
+    def execute_command(self,bucket_name,command,user='jovyan',detach=True,tty=False):
         '''
         Execute a command in the bucket.  Returns the exit code and output form the command, if applicable (if not detached?).
         '''
@@ -474,7 +474,7 @@ class Resen():
             raise RuntimeError('Bucket %s is not running!' % (bucket['name']))
 
         # execute command
-        result = self.dockerhelper.execute_command(bucket,command,user=user,detach=detach)
+        result = self.dockerhelper.execute_command(bucket,command,user=user,detach=detach,tty=tty)
         code, output = result
         if (detach and code is not None) or (not detach and code!=0):
             raise RuntimeError('Failed to execute command %s' % (command))
@@ -487,7 +487,7 @@ class Resen():
         Add jovyan user to sudoers
         '''
         cmd = "bash -cl 'echo \"jovyan:{}\" | chpasswd && usermod -aG sudo jovyan && sed --in-place \"s/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\\1/\" /etc/sudoers'".format(password)
-        self.execute_command(bucket_name, cmd, user='root')
+        self.execute_command(bucket_name,cmd,user='root',detach=False,tty=True)
 
         return
 
