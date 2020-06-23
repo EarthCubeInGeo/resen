@@ -837,7 +837,13 @@ class Resen():
         #       and if that fails, fallback to hardcoded list
         return [{"version":"2019.1.0","repo":"resen-core","org":"earthcubeingeo",
                  "image_id":'sha256:5300c6652851f35d2fabf866491143f471a7e121998fba27a8dff6b3c064af35',
-                 "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},]
+                 "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},
+                {"version":"2020.1.0","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:b1f1c9013924c95f678a0aa7403e343cc2ee103f438b1a237193f091170ba077',
+                 "repodigest":'sha256:7bf4e28cf06e40b0e12cb0474232d6d3b520ec1a8c2d361d83fc0cb97083989c'},
+               ]
+    
+    
 
 
     def _get_config_dir(self):
