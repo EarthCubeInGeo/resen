@@ -6,7 +6,7 @@
 
 - Add new available resen-core: 2020.1.0
 - bug fixed when importing a bucket: now tar files of mounted paths are removed after a successful import.
-- bug fixed when giving sudo privileges to locally run resen.
+- fixed bug causing enabling sudo access for user jovyan failed
 
 2019.1.1 (2019-12-10)
 +++++++++++++++++++++
@@ -20,4 +20,3 @@
 +++++++++++++++++++++
 
 - Initial release.
-
