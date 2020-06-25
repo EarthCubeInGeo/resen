@@ -461,7 +461,7 @@ class Resen():
         return
 
 
-    def execute_command(self,bucket_name,command,user='jovyan',detach=True):
+    def execute_command(self,bucket_name,command,user='jovyan',detach=True,tty=False):
         '''
         Execute a command in the bucket.  Returns the exit code and output form the command, if applicable (if not detached?).
         '''
@@ -474,7 +474,7 @@ class Resen():
             raise RuntimeError('Bucket %s is not running!' % (bucket['name']))
 
         # execute command
-        result = self.dockerhelper.execute_command(bucket,command,user=user,detach=detach)
+        result = self.dockerhelper.execute_command(bucket,command,user=user,detach=detach,tty=tty)
         code, output = result
         if (detach and code is not None) or (not detach and code!=0):
             raise RuntimeError('Failed to execute command %s' % (command))
@@ -487,7 +487,7 @@ class Resen():
         Add jovyan user to sudoers
         '''
         cmd = "bash -cl 'echo \"jovyan:{}\" | chpasswd && usermod -aG sudo jovyan && sed --in-place \"s/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\\1/\" /etc/sudoers'".format(password)
-        self.execute_command(bucket_name, cmd, user='root')
+        self.execute_command(bucket_name,cmd,user='root',detach=False,tty=True)
 
         return
 
@@ -726,6 +726,8 @@ class Resen():
             with tarfile.open(str(extract_dir.joinpath(mount[0]))) as tar:
                 tar.extractall(path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
+            # remove mount tar file
+            os.remove(str(extract_dir.joinpath(mount[0])))
             # add mount to bucket with original container path
             self.add_storage(bucket_name,str(local),mount[1],permissions=mount[2])
 
@@ -835,7 +837,13 @@ class Resen():
         #       and if that fails, fallback to hardcoded list
         return [{"version":"2019.1.0","repo":"resen-core","org":"earthcubeingeo",
                  "image_id":'sha256:5300c6652851f35d2fabf866491143f471a7e121998fba27a8dff6b3c064af35',
-                 "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},]
+                 "repodigest":'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296'},
+                {"version":"2020.1.0","repo":"resen-core","org":"earthcubeingeo",
+                 "image_id":'sha256:b1f1c9013924c95f678a0aa7403e343cc2ee103f438b1a237193f091170ba077',
+                 "repodigest":'sha256:7bf4e28cf06e40b0e12cb0474232d6d3b520ec1a8c2d361d83fc0cb97083989c'},
+               ]
+    
+    
 
 
     def _get_config_dir(self):
