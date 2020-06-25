@@ -1,3 +1,3 @@
-__version__ = '2019.1.1'
+__version__ = '2020.1.0'
 
 from .Resen import Resen

@@ -9,3 +9,7 @@ Contents
    installation/index
    usage
 
+Changelog
+---------
+
+.. include:: ../HISTORY.rst

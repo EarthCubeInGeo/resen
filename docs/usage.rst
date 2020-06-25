@@ -12,7 +12,7 @@ This will open the resen tool::
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
 
-    Resen 2019.1.0 -- Reproducible Software Environment
+    Resen 2020.1.0 -- Reproducible Software Environment
 
     [resen] >>>
 
@@ -54,8 +54,8 @@ Setup a New Bucket
    Next, the user is asked to specify the version of resen-core to use::
 
      Please choose a version of resen-core.
-     Available versions: 2019.1.0
-     >>> Select a version: 2019.1.0
+     Available versions: 2019.1.0, 2020.1.0
+     >>> Select a version: 2020.1.0
 
    Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/mount``::
 
@@ -88,7 +88,7 @@ Setup a New Bucket
      amber
      =====
    
-     Resen-core Version:  2019.1.0
+     Resen-core Version:  2020.1.0
      Status:  running
      Jupyter Token:  e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
      Jupyter Port:  9002
@@ -110,7 +110,7 @@ Work with a Bucket
 
     [resen] >>> list
     Bucket Name         Docker Image             Status
-    amber               2019.1.0                 running
+    amber               2020.1.0                 running
 
    If a bucket is running, it will consume system resources accordingly.
 
@@ -122,7 +122,7 @@ Work with a Bucket
 
     [resen] >>> list
     Bucket Name         Docker Image             Status
-    amber               2019.1.0                 exited
+    amber               2020.1.0                 exited
 
    The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
 
@@ -134,7 +134,7 @@ Work with a Bucket
 
     [resen] >>> status
     Bucket Name         Docker Image             Status
-    amber               2019.1.0                 running
+    amber               2020.1.0                 running
 
 4. Export bucket ``amber``::
 
@@ -208,6 +208,11 @@ Work with a Bucket
     ...starting jupyterlab...
     Jupyter lab can be accessed in a browser at: http://localhost:9003/?token=70532767bab0ddc4febe2790efaaf974961e961e78e6025a
 
+Sudo-enabled buckets
+--------------------
+
+When starting a bucket with resen, `sudo` is enabled for the jovyan user to allow special installation and configuration
+where root security privileges are needed. The password for running `sudo` commands with user jovyan is: `ganimede`.
 
 Remove a Bucket
 ---------------
