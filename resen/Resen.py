@@ -42,6 +42,7 @@ import webbrowser  # use this to open web browser
 from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
 import platform   # NEEDED FOR WINDOWS QUICK FIX
+import requests
 
 
 from .DockerHelper import DockerHelper
@@ -53,6 +54,7 @@ class Resen():
         # get configuration info
         self.resen_root_dir = self._get_config_dir()
         self.resen_home_dir = self._get_home_dir()
+
 
         # set lock
         self.__locked = False
@@ -70,7 +72,7 @@ class Resen():
         self.win_vbox_map = self.__get_win_vbox_map()
 
         ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
-        ### If so, can we move the white list to resencmd.py? The server shouldn't every try to
+        ### If so, can we move the white list to resencmd.py? The server shouldn't ever try to
         ### mount to an illegal location but the user might.
         self.storage_whitelist = ['/home/jovyan/mount']
 
@@ -832,15 +834,30 @@ class Resen():
 
     def __get_valid_cores(self):
 
-        # define core list file name
-        core_list = os.path.join(self.resen_root_dir,'cores.json')
+        # define core list directory
+        core_dir = os.path.join(self.resen_root_dir,'cores')
 
-        # check if buckets.json exists, if not, initialize empty dictionary
-        with open(core_list,'r') as f:
-            cores = json.load(f)
+        # If core directory does not exist, create it and download the default core list file
+        if not os.path.exists(core_dir):
+            os.makedirs(core_dir)
+            self._update_core_list()
+
+        # for each JSON file in core directory, read in list of cores
+        cores = []
+        for fn in os.listdir(core_dir):
+            with open(os.path.join(core_dir,fn),'r') as f:
+                cores.extend(json.load(f))
 
         return cores
 
+    def _update_core_list(self):
+
+        core_list_url = 'https://raw.githubusercontent.com/EarthCubeInGeo/resen-core/master/cores.json'
+        core_filename = os.path.join(self.resen_root_dir,'cores','cores.json')
+
+        r = requests.get(core_list_url)
+        with open(core_filename, 'wb') as f:
+            f.write(r.content)
 
 
     def _get_config_dir(self):
