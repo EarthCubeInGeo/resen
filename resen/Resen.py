@@ -832,25 +832,7 @@ class Resen():
             self.save_config()
 
 
-    def __get_valid_cores(self):
-
-        # define core list directory
-        core_dir = os.path.join(self.resen_root_dir,'cores')
-
-        # If core directory does not exist, create it and download the default core list file
-        if not os.path.exists(core_dir):
-            os.makedirs(core_dir)
-            self._update_core_list()
-
-        # for each JSON file in core directory, read in list of cores
-        cores = []
-        for fn in os.listdir(core_dir):
-            with open(os.path.join(core_dir,fn),'r') as f:
-                cores.extend(json.load(f))
-
-        return cores
-
-    def _update_core_list(self):
+    def update_core_list(self):
 
         core_list_url = 'https://raw.githubusercontent.com/EarthCubeInGeo/resen-core/master/cores.json'
         core_filename = os.path.join(self.resen_root_dir,'cores','cores.json')
@@ -859,6 +841,24 @@ class Resen():
         with open(core_filename, 'wb') as f:
             f.write(r.content)
 
+
+    def __get_valid_cores(self):
+
+        # define core list directory
+        core_dir = os.path.join(self.resen_root_dir,'cores')
+
+        # If core directory does not exist, create it and download the default core list file
+        if not os.path.exists(core_dir):
+            os.makedirs(core_dir)
+            self.update_core_list()
+
+        # for each JSON file in core directory, read in list of cores
+        cores = []
+        for fn in os.listdir(core_dir):
+            with open(os.path.join(core_dir,fn),'r') as f:
+                cores.extend(json.load(f))
+
+        return cores
 
     def _get_config_dir(self):
         appname = 'resen'
