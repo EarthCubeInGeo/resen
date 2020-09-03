@@ -25,7 +25,7 @@ This will produce a list of resen commands you will use to manage your resen buc
     Documented commands (type help <topic>):
     ========================================
     EOF     exit    help    list  remove  status
-    create  export  import  quit  start   stop 
+    create  export  import  quit  start   stop
 
 To get more information about a specific command, enter ``help <command>``.
 
@@ -87,17 +87,17 @@ Setup a New Bucket
 
      amber
      =====
-   
+
      Resen-core Version:  2020.1.0
      Status:  running
      Jupyter Token:  e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
      Jupyter Port:  9002
      Jupyter lab URL: http://localhost:9002/?token=e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
-   
+
      Storage:
      Local                                   Bucket                                  Permissions
      /some/local/path                        /home/jovyan/mount/path                 rw
-   
+
      Ports:
      Local          Bucket
      9002           9002
@@ -151,7 +151,7 @@ Work with a Bucket
     >>> Image name: custom_name
     >>> Image tag: custom_tag
 
-  Specify if you want all mounted directories to be included in the exported bucket.  Answering `n` to this query will allow you to see how large each mount is and specify which you would like to include.  Consider excluding any mounts that are not nessesary for the analysis to reduce the size of the output file::
+  Specify if you want all mounted directories to be included in the exported bucket.  Answering `n` to this query will allow you to see how large each mount is and specify which you would like to include.  Consider excluding any mounts that are not necessary for the analysis to reduce the size of the output file::
 
     The following local directories are mounted to the bucket (total 2212 MB):
     /home/usr/mount1
@@ -167,6 +167,8 @@ Work with a Bucket
     This export could require up to 13337 MB of disk space to complete and will produce an output file up to 4600 MB.
     >>> Are you sure you would like to continue? (y/n): y
     Exporting bucket amber.  This will take several minutes.
+
+  If a full path is not provided for the output file name, the default location for the output file is whatever directory resen was started in.  For example, if you start resen in ``~\Desktop\MyStuff`` and respond to the first prompt with ``new_bucket``, the output tar file will be ``~\Desktop\MyStuff\new_bucket.tar``. 
 
 5. Import a new bucket, ``amber2``, from a tar file ``amber.tar``::
 
@@ -223,5 +225,3 @@ The user can delete a bucket with the following command::
     [resen] >>> remove amber
 
 A bucket that is running needs to be stopped before being removed.
-
-
