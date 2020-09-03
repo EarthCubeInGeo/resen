@@ -8,6 +8,7 @@ Contents
    readme
    installation/index
    usage
+   mounting
 
 Changelog
 ---------
