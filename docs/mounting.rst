@@ -9,6 +9,8 @@ What's the deal with mounting?
 
 When you create a bucket, you have the option to mount local directories into the bucket, but what does this actually mean?  Buckets are self-contained "mini-systems" that are isolated from the rest of your system.  This allows us to have an environment and workspace that is operating system agnostic, which is highly useful for reproducing and sharing scientific results.  The downside to this is that you cannot usually access any files on your local (host) system, a significant roadblock for scientists who often work with large amounts of data and reuse standard scripts and utilities they've written for multiple projects.  Mounting is the standard solution to these problems.
 
+.. image:: images/mounting.png
+
 Mounting a directory to a bucket gives the bucket sub-system access to that directory on the local system.  This is typically useful if your project involves analyzing a large amount of data you have on your local computer, or if you have some set of standard scripts or utilities you would like to be able to use in your project.  Mounting the directory containing these files lets you use them in your bucket.
 
 
