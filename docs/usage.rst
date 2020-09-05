@@ -29,6 +29,8 @@ This will produce a list of resen commands you will use to manage your resen buc
 
 To get more information about a specific command, enter ``help <command>``.
 
+.. _resen-workflow:
+
 Resen Workflow
 ==============
 
@@ -57,7 +59,7 @@ Setup a New Bucket
      Available versions: 2019.1.0, 2020.1.0
      >>> Select a version: 2020.1.0
 
-   Optionally, one may then specify a local directory to mount into the bucket at ``/home/jovyan/mount``::
+   Optionally, one may then specify a local directory to :ref:`mount <mounting>` into the bucket at ``/home/jovyan/mount``::
 
      Local directories can be mounted to either /home/jovyan/work or /home/jovyan/mount/ in
      a bucket. The /home/jovyan/work location is a workspace and /home/jovyan/mount/ is intended
@@ -168,7 +170,7 @@ Work with a Bucket
     >>> Are you sure you would like to continue? (y/n): y
     Exporting bucket amber.  This will take several minutes.
 
-  If a full path is not provided for the output file name, the default location for the output file is whatever directory resen was started in.  For example, if you start resen in ``~\Desktop\MyStuff`` and respond to the first prompt with ``new_bucket``, the output tar file will be ``~\Desktop\MyStuff\new_bucket.tar``. 
+  If a full path is not provided for the output file name, the default location for the output file is whatever directory resen was started in.  For example, if you start resen in ``~\Desktop\MyStuff`` and respond to the first prompt with ``new_bucket``, the output tar file will be ``~\Desktop\MyStuff\new_bucket.tar``.
 
 5. Import a new bucket, ``amber2``, from a tar file ``amber.tar``::
 
