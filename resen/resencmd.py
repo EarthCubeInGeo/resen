@@ -260,7 +260,7 @@ import : Import a bucket from a .tgz file by providing input."""
         resen_home_dir = self.program.resen_home_dir
         default_import = os.path.join(resen_home_dir,bucket_name)
         print("The default directory to extract the bucket metadata and mounts to is {}.".format(default_import))
-        rsp = self.get_yn(">>> Would you like to specify and alternate directory? (y/n): ")
+        rsp = self.get_yn(">>> Would you like to specify an alternate directory? (y/n): ")
         if rsp=='y':
             while True:
                 extract_dir = input('>>> Enter path to directory: ')
@@ -371,7 +371,9 @@ import : Import a bucket from a .tgz file by providing input."""
 
             # check if bucket_name has spaces in it and is greater than 20 characters
             # also bucket name must start with a letter
-            if ' ' in name:
+            if not name:
+                print("Please enter a vaild name.")
+            elif ' ' in name:
                 print("Bucket names may not contain spaces.")
             elif len(name) > 20:
                 print("Bucket names must be less than 20 characters.")

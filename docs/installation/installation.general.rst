@@ -33,4 +33,4 @@ Resen
 
 Install Resen from a python 3 environment using ``pip``::
 
-    pip install git+https://github.com/EarthCubeInGeo/resen.git@v2019.1.1
+    pip install git+https://github.com/EarthCubeInGeo/resen.git@v2020.1.0
