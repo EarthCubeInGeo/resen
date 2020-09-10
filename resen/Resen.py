@@ -856,8 +856,11 @@ class Resen():
         # for each JSON file in core directory, read in list of cores
         cores = []
         for fn in os.listdir(core_dir):
-            with open(os.path.join(core_dir,fn),'r') as f:
-                cores.extend(json.load(f))
+            try:
+                with open(os.path.join(core_dir,fn),'r') as f:
+                    cores.extend(json.load(f))
+            except json.decoder.JSONDecodeError:
+                print('WARNING: {} is not a valid JSON file! Skiping this file.'.format(fn))
 
         return cores
 
