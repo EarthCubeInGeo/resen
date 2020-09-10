@@ -27,6 +27,8 @@ Docker CE is the recommended version of Docker to use with Resen.  `Installation
 
 **Ubuntu**: `Get Docker CE for Ubuntu <https://docs.docker.com/install/linux/docker-ce/ubuntu/>`_
 
+If using a Linux system, consider following the `Post-installation steps for Linux <https://docs.docker.com/engine/install/linux-postinstall/>`_ for smoother integration of docker with your host system.
+
 
 Resen
 =====
