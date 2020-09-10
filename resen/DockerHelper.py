@@ -119,18 +119,43 @@ class DockerHelper():
         Pull image from dockerhub.
         '''
         import datetime
+        import os
+
         # time formatting
         def truncate_secs(delta_time, fmt=":%.2d"):
             delta_str = str(delta_time).split(':')
             return ":".join(delta_str[:-1]) + fmt%(float(delta_str[-1]))
+
+        # get terminal dimensions
+        def get_terminal_dims():
+            """Returns integers rows and columns of the terminal."""
+            return [int(x) for x in os.popen('stty size', 'r').read().split()]
+
         # progress bar
-        def update_bar(sum_total,accumulated,t0,current_time, scale=0.5):
+        def update_bar(sum_total,accumulated,t0,current_time, init_bar_chars=34):
+            """Updates the progress bar.
+
+            Args:
+                sum_total: total number of bytes to download
+                accumulated: bytes already downloaded
+                t0: time when pulling image started
+                current_time: current time
+                init_bar_chars: default number of characters of the bar
+                              including [,>, spaces,  and ],
+                              e.g. [===>   ] would be 9 characters.
+            """
             percentage = accumulated/sum_total*100
-            nchars = int(percentage*scale)
-            bar = "\r["+nchars*"="+">"+(int(100*scale)-nchars)*" "+"]"
-            time_info = "Elapsed time: %s"%truncate_secs(current_time - t0)
-            print(bar+" %6.2f %%, %5.3f/%4.2fGB %s"%(percentage,
-                accumulated/1024**3,sum_total/1024**3,time_info),end="")
+            time_info = "Elapsed t: %s"%truncate_secs(current_time - t0)
+            bartext = "%5.1f %%, %5.3f/%4.2fGB %s"%(percentage,
+                accumulated/1024**3,sum_total/1024**3,time_info)
+            rows, columns = get_terminal_dims()
+            max_bar_length = max(5,columns - len(bartext)-1)
+            bar_chars = min(init_bar_chars,max_bar_length)
+            nchars = int(percentage*(bar_chars-3)/100)
+            bar = "\r["+nchars*"="+">"+(bar_chars-3-nchars)*" "+"]"
+            total_out = bar+bartext
+            max_out = min(columns,len(total_out)) # don't print beyond columns
+            print(total_out[:max_out],end="")
 
         print('Pulling image: {}:{}'.format(image['repo'],image['version']))
         print('   This may take some time...')
