@@ -5,16 +5,24 @@ https://packaging.python.org/en/latest/distributing.html
 Based on: https://github.com/pypa/sampleproject/master/setup.py
 """
 
+import os
+import re
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
-from os import path
 
-here = path.abspath(path.dirname(__file__))
+here = os.path.abspath(os.path.dirname(__file__))
+
+# Get version number from __init__.py
+regex = "(?<=__version__..\s)\S+"
+with open(os.path.join(here,'resen/__init__.py'),'r', encoding='utf-8') as f:
+    text = f.read()
+match = re.findall(regex,text)
+version = match[0].strip("'")
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
@@ -23,7 +31,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='2020.1.0',    #TODO: parse this from resen/__init__.py
+    version=version,    #TODO: parse this from resen/__init__.py
 
     description='A python package for watching, copying, and transporting files around.',
     long_description=long_description,
