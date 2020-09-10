@@ -328,6 +328,9 @@ import : Import a bucket from a .tgz file by providing input."""
             print("Deleting %s as requested." % str(file_name))
             os.remove(file_name)
 
+    def do_update(self,arg):
+        """update : Update default list of resen-cores available."""
+        self.program.update_core_list()
 
     def do_quit(self,arg):
         """quit : Terminates the application."""
