@@ -521,10 +521,13 @@ class Resen():
             local_port = bucket['port'][0][0]
             container_port = bucket['port'][0][1]
 
+        # Get the python environment path, if none found, default to py36
+        envpath = bucket['image'].get('envpath','/home/jovyan/envs/py36')
+
         # set a random token and form
         token = '%048x' % random.randrange(16**48)
-        command = "bash -cl 'source /home/jovyan/envs/py36/bin/activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
-        command = command % (container_port, token)
+        command = "bash -cl 'source %s/bin/activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
+        command = command % (envpath,container_port, token)
 
         # exectute command to start jupyter server
         self.execute_command(bucket_name,command,detach=True)
