@@ -566,12 +566,15 @@ class Resen():
         if pid is None:
             return True
 
+        # Get the python environment path, if none found, default to py36
+        envpath = bucket['image'].get('envpath','/home/jovyan/envs/py36')
+
         # form python command to stop jupyter and execute it
         port = bucket['jupyter']['port']
         python_cmd = 'from notebook.notebookapp import shutdown_server, list_running_servers; '
         python_cmd += 'svrs = [x for x in list_running_servers() if x[\\\"port\\\"] == %s]; ' % (port)
         python_cmd += 'sts = True if len(svrs) == 0 else shutdown_server(svrs[0]); print(sts)'
-        command = "bash -cl '/home/jovyan/envs/py36/bin/python -c \"%s \"'" % (python_cmd)
+        command = "bash -cl '%s/bin/python -c \"%s \"'" % (envpath,python_cmd)
         status = self.execute_command(bucket_name,command,detach=False)
 
         # now verify it is dead
