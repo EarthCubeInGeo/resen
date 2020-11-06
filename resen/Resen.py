@@ -896,11 +896,26 @@ class Resen():
 
 
     def __process_exists(self,pid):
-        try:
-            os.kill(pid,0)
-        except ProcessLookupError:
-            return False
-        return True
+        # Need to do different things for *nix vs. Windows
+        # see https://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid-in-python
+
+        if os.name == 'nt':
+            # only works on windows
+            from win32com.client import GetObject
+            WMI = GetObject('winmgmts:')
+            processes = WMI.InstancesOf('Win32_Process')
+            pids = [process.Properties_('ProcessID').Value for process in processes]
+            return pid in pids
+        else:
+            # only works on *nix systems
+            try:
+                os.kill(pid,0)
+            except ProcessLookupError:
+                return False
+            except PermissionError: # errno.EPERM
+                return True # Operation not permitted (i.e., process exists)
+            else:
+                return True # no error, we can send a signal to the process
 
 
     def __lock(self):
