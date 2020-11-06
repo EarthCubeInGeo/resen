@@ -526,7 +526,7 @@ class Resen():
 
         # set a random token and form
         token = '%048x' % random.randrange(16**48)
-        command = "bash -cl 'source %s/bin/activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
+        command = "bash -cl 'source %s/bin/activate && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
         command = command % (envpath,container_port, token)
 
         # exectute command to start jupyter server
