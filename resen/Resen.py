@@ -895,13 +895,46 @@ class Resen():
         return os.path.join(homedir,appname)
 
 
+    def __process_exists(self,pid):
+        # Need to do different things for *nix vs. Windows
+        # see https://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid-in-python
+
+        if os.name == 'nt':
+            # only works on windows
+            from win32com.client import GetObject
+            WMI = GetObject('winmgmts:')
+            processes = WMI.InstancesOf('Win32_Process')
+            pids = [process.Properties_('ProcessID').Value for process in processes]
+            return pid in pids
+        else:
+            # only works on *nix systems
+            try:
+                os.kill(pid,0)
+            except ProcessLookupError:
+                return False
+            except PermissionError: # errno.EPERM
+                return True # Operation not permitted (i.e., process exists)
+            else:
+                return True # no error, we can send a signal to the process
+
+
     def __lock(self):
+        # dev note: if we want to be more advanced, need psutil as dependency
+        # get some telemetry to fingerprint with
+        cur_pid = os.getpid()      # process id
+
+        # check if lockfile exists
         self.__lockfile = os.path.join(self.resen_root_dir,'lock')
         if os.path.exists(self.__lockfile):
-            raise RuntimeError('Another instance of Resen is already running!')
+            #parse existing file
+            with open(self.__lockfile,'r') as f:
+                pid = int(f.read())
+                if self.__process_exists(pid):
+                    raise RuntimeError('Another instance of Resen is already running!')
 
+        telem = '%d' % (cur_pid)
         with open(self.__lockfile,'w') as f:
-            f.write('locked')
+            f.write(telem)
         self.__locked = True
 
 
