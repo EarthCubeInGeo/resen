@@ -1,13 +1,14 @@
 
 .. :changelog:
 
-2020.2.0 (2020-10-01)
+2020.2.0 (2020-11-06)
 +++++++++++++++++++++
 
 - Changed valid core list to be read from JSON file downloaded from resen-core repo rather than hardcoded in source code
-- Fixed bug which caused odd behavior with progress bar when downloading cores in narrow terminal window
+- Fixed #63, bug which caused odd behavior with progress bar when downloading cores in narrow terminal window
 - Read version number from init file
 - Improve documentation on mounting, bucket exporting, and Linux post-installation steps
+- Fixed #14, an issue with the resen lockfile
 
 2020.1.0 (2020-06-24)
 +++++++++++++++++++++
