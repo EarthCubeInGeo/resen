@@ -521,10 +521,13 @@ class Resen():
             local_port = bucket['port'][0][0]
             container_port = bucket['port'][0][1]
 
+        # Get the python environment path, if none found, default to py36
+        envpath = bucket['image'].get('envpath','/home/jovyan/envs/py36')
+
         # set a random token and form
         token = '%048x' % random.randrange(16**48)
-        command = "bash -cl 'source /home/jovyan/envs/py36/bin/activate py36 && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
-        command = command % (container_port, token)
+        command = "bash -cl 'source %s/bin/activate && jupyter lab --no-browser --ip 0.0.0.0 --port %s --NotebookApp.token=%s --KernelSpecManager.ensure_native_kernel=False'"
+        command = command % (envpath,container_port, token)
 
         # exectute command to start jupyter server
         self.execute_command(bucket_name,command,detach=True)
@@ -563,12 +566,15 @@ class Resen():
         if pid is None:
             return True
 
+        # Get the python environment path, if none found, default to py36
+        envpath = bucket['image'].get('envpath','/home/jovyan/envs/py36')
+
         # form python command to stop jupyter and execute it
         port = bucket['jupyter']['port']
         python_cmd = 'from notebook.notebookapp import shutdown_server, list_running_servers; '
         python_cmd += 'svrs = [x for x in list_running_servers() if x[\\\"port\\\"] == %s]; ' % (port)
         python_cmd += 'sts = True if len(svrs) == 0 else shutdown_server(svrs[0]); print(sts)'
-        command = "bash -cl '/home/jovyan/envs/py36/bin/python -c \"%s \"'" % (python_cmd)
+        command = "bash -cl '%s/bin/python -c \"%s \"'" % (envpath,python_cmd)
         status = self.execute_command(bucket_name,command,detach=False)
 
         # now verify it is dead
@@ -889,13 +895,46 @@ class Resen():
         return os.path.join(homedir,appname)
 
 
+    def __process_exists(self,pid):
+        # Need to do different things for *nix vs. Windows
+        # see https://stackoverflow.com/questions/568271/how-to-check-if-there-exists-a-process-with-a-given-pid-in-python
+
+        if os.name == 'nt':
+            # only works on windows
+            from win32com.client import GetObject
+            WMI = GetObject('winmgmts:')
+            processes = WMI.InstancesOf('Win32_Process')
+            pids = [process.Properties_('ProcessID').Value for process in processes]
+            return pid in pids
+        else:
+            # only works on *nix systems
+            try:
+                os.kill(pid,0)
+            except ProcessLookupError:
+                return False
+            except PermissionError: # errno.EPERM
+                return True # Operation not permitted (i.e., process exists)
+            else:
+                return True # no error, we can send a signal to the process
+
+
     def __lock(self):
+        # dev note: if we want to be more advanced, need psutil as dependency
+        # get some telemetry to fingerprint with
+        cur_pid = os.getpid()      # process id
+
+        # check if lockfile exists
         self.__lockfile = os.path.join(self.resen_root_dir,'lock')
         if os.path.exists(self.__lockfile):
-            raise RuntimeError('Another instance of Resen is already running!')
+            #parse existing file
+            with open(self.__lockfile,'r') as f:
+                pid = int(f.read())
+                if self.__process_exists(pid):
+                    raise RuntimeError('Another instance of Resen is already running!')
 
+        telem = '%d' % (cur_pid)
         with open(self.__lockfile,'w') as f:
-            f.write('locked')
+            f.write(telem)
         self.__locked = True
 
 

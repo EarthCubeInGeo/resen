@@ -233,7 +233,7 @@ export bucket_name: Export bucket to a sharable *.tar file."""
             return
         else:
             try:
-                print('Exporting bucket %s.  This will take several mintues.' % bucket_name)
+                print('Exporting bucket %s.  This will take several minutes.' % bucket_name)
                 self.program.export_bucket(bucket_name, file_name, exclude_mounts=exclude_list, img_repo=img_name, img_tag=img_tag)
             except (ValueError, RuntimeError) as e:
                 print(e)
