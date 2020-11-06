@@ -895,13 +895,31 @@ class Resen():
         return os.path.join(homedir,appname)
 
 
+    def __process_exists(self,pid):
+        try:
+            os.kill(pid,0)
+        except ProcessLookupError:
+            return False
+        return True
+
+
     def __lock(self):
+        # dev note: if we want to be more advanced, need psutil as dependency
+        # get some telemetry to fingerprint with
+        cur_pid = os.getpid()      # process id
+
+        # check if lockfile exists
         self.__lockfile = os.path.join(self.resen_root_dir,'lock')
         if os.path.exists(self.__lockfile):
-            raise RuntimeError('Another instance of Resen is already running!')
+            #parse existing file
+            with open(self.__lockfile,'r') as f:
+                pid = int(f.read())
+                if self.__process_exists(pid):
+                    raise RuntimeError('Another instance of Resen is already running!')
 
+        telem = '%d' % (cur_pid)
         with open(self.__lockfile,'w') as f:
-            f.write('locked')
+            f.write(telem)
         self.__locked = True
 
 
