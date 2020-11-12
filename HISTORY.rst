@@ -1,6 +1,12 @@
 
 .. :changelog:
 
+2020.2.1 (2020-11-12)
++++++++++++++++++++++
+
+- Fixed #73, a bug affecting the update command
+- Added documentation for the update command
+
 2020.2.0 (2020-11-06)
 +++++++++++++++++++++
 
