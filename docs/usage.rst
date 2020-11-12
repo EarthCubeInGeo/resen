@@ -66,7 +66,7 @@ Setup a New Bucket
    Next, the user is asked to specify the version of resen-core to use::
 
      Please choose a version of resen-core.
-     Available versions: 2019.1.0, 2020.1.0, 2020.2.0, 2020.2.0
+     Available versions: 2019.1.0, 2020.1.0, 2020.2.0
      >>> Select a version: 2020.2.0
 
    Optionally, one may then specify a local directory to :ref:`mount <mounting>` into the bucket at ``/home/jovyan/mount``::
