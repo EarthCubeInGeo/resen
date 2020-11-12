@@ -849,6 +849,8 @@ class Resen():
         with open(core_filename, 'wb') as f:
             f.write(r.content)
 
+        self.valid_cores = self.__get_valid_cores()
+
 
     def __get_valid_cores(self):
         # define core list directory

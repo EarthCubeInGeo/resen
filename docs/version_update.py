@@ -5,7 +5,7 @@ import os
 import fileinput
 
 old_version = '2020.2.0'
-new_version = '2020.1.0'
+new_version = '2020.2.1'
 
 for root, dirs, files in os.walk('..'):
     for fn in files:
