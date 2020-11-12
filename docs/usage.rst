@@ -12,7 +12,7 @@ This will open the resen tool::
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
 
-    Resen 2020.2.0 -- Reproducible Software Environment
+    Resen 2020.2.1 -- Reproducible Software Environment
 
     [resen] >>>
 
@@ -24,7 +24,7 @@ This will produce a list of resen commands you will use to manage your resen buc
 
     Documented commands (type help <topic>):
     ========================================
-    EOF     exit    help    list  remove  status
+    EOF     exit    help    list  remove  status  update
     create  export  import  quit  start   stop
 
 To get more information about a specific command, enter ``help <command>``.
@@ -39,6 +39,16 @@ To create, import, export, and remove buckets, we use Resen. Buckets are portabl
 The interface to a resen bucket is a jupyter lab server and access to the bucket is provided through a web browser. The user home directory is ``/home/jovyan``. Any mounted storage directories are available in ``mount``.
 
 Below are instructions on how to use Resen to work with buckets. A typical workflow will involve: creation of a bucket, performing scientific data analysis inside the bucket, exporting the bucket and sharing it with colleagues. Collaborators can then import the bucket, perform additional analysis, and then export the bucket for publication in an open access citable repository, such as `Zenodo <https://zenodo.org/>`_.
+
+Update List of Available Cores
+------------------------------
+
+1. Before creating a new bucket, update the list of available cores with the command::
+
+     [resen] >>> update
+
+   When you install resen, it comes with a list of available core, but we will release new versions periodically. This update command fetches the most up to date list which allows you to use the latest version of resen-core.
+
 
 Setup a New Bucket
 ------------------
@@ -56,7 +66,7 @@ Setup a New Bucket
    Next, the user is asked to specify the version of resen-core to use::
 
      Please choose a version of resen-core.
-     Available versions: 2019.1.0, 2020.1.0, 2020.2.0
+     Available versions: 2019.1.0, 2020.1.0, 2020.2.0, 2020.2.0
      >>> Select a version: 2020.2.0
 
    Optionally, one may then specify a local directory to :ref:`mount <mounting>` into the bucket at ``/home/jovyan/mount``::
