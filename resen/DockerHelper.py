@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import os
 import gzip
 import time
 import docker
 import requests
+import datetime
 
 # all the docker commands wrapped up nicely
 
@@ -80,9 +82,7 @@ class DockerHelper():
         container = self.docker.containers.get(bucket['container'])
         container.start()   # this does nothing if already started
         container.reload()
-        # print(container.status)
-        # time.sleep(0.1)
-        # print(container.status)
+
         return container.status
 
 
@@ -93,7 +93,7 @@ class DockerHelper():
         container = self.docker.containers.get(bucket['container'])
         container.stop()    # this does nothing if already stopped
         container.reload()
-        # time.sleep(0.1)
+
         return container.status
 
 
@@ -103,6 +103,7 @@ class DockerHelper():
         '''
         container = self.docker.containers.get(bucket['container'])
         result = container.exec_run(command,user=user,detach=detach,tty=tty)
+
         return result.exit_code, result.output
 
 
@@ -111,8 +112,6 @@ class DockerHelper():
         '''
         Pull image from dockerhub.
         '''
-        import datetime
-        import os
 
         # time formatting
         def truncate_secs(delta_time, fmt=":%.2d"):
@@ -172,20 +171,23 @@ class DockerHelper():
                 else:
                     id_current[id_list.index(line['id'])] = line_current
                 current_time = datetime.datetime.now()
+
+                # To limit print statements to no more than 1 per second.
                 if (current_time-prev_time).total_seconds()<1:
-                    # To limit print statements to no more than 1 per second.
                     continue
+
                 prev_time = current_time
                 update_bar(id_total,sum(id_current),t0,current_time)
+
             # Last update of the progress bar:
             update_bar(id_total,sum(id_current),t0,current_time)
         except Exception as e:
             raise RuntimeError("\nException encountered while pulling image {}\nException: {}".format(pull_image,str(e)))
 
-        print() # to avoid erasing the progress bar at the end
+        # avoid erasing the progress bar at the end
+        print()
 
-        # repo,digest = pull_image.split('@')
-        # When pulling from repodigest sha256 no tag is assigned. So:
+        # When pulling using repodigest sha256, no tag is assigned, so assign one
         docker_image = self.docker.images.get(pull_image)
         docker_image.tag('{}/{}'.format(image['org'],image['repo']), tag=image['version'])
         print("Done!")
@@ -217,7 +219,7 @@ class DockerHelper():
             # save image as *.tar file
             image = self.docker.images.get(image_name)
             out = image.save()
-            # with open(str(filename), 'wb') as f:
+
             with gzip.open(str(filename),'wb',compresslevel=1) as f:
                 for chunk in out:
                     f.write(chunk)
@@ -254,8 +256,6 @@ class DockerHelper():
         #   for the --size flag (https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.container), so the dict returned
         #   does not have size information
 
-        # with docker.APIClient() as apiclient:
-        #     info = apiclient.containers(all=True, size=True, filters={'id':bucket['container']})[0]
         info = self.docker.api.containers(all=True, size=True, filters={'id':bucket['container']})[0]
 
         return info['SizeRw']+info['SizeRootFs']
@@ -268,12 +268,3 @@ class DockerHelper():
         container.reload()  # maybe redundant
 
         return container.status
-
-    # # get a container object given a container id
-    # def get_container(self,container_id):
-    #     try:
-    #         container = self.docker.containers.get(container_id)
-    #         return container
-    #     except docker.errors.NotFound:
-    #         print("ERROR: No such container: %s" % container_id)
-    #         return None
