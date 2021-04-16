@@ -48,18 +48,11 @@ class DockerHelper():
             temp = {'bind': container, 'mode': permissions}
             kwargs['volumes'][host] = temp
 
-        # check if we have image, if not, pull it
+        # check if we have image
         local_image_ids = [x.id for x in self.docker.images.list()]
+        # if not, pull it
         if bucket['image']['image_id'] not in local_image_ids:
-            # print("Pulling image: %s" % bucket['image']['repo'])
-            # print("   This may take some time...")
-            # status = self.stream_pull_image(bucket['pull_image'])
             self.stream_pull_image(bucket['image'])
-            # image = self.docker.images.get(bucket['pull_image'])
-            # repo,digest = pull_image.split('@')
-            # # When pulling from repodigest sha256 no tag is assigned. So:
-            # image.tag(repo, tag=bucket['image'])
-            # print("Done!")
 
         # start the container
         container = self.docker.containers.create(bucket['image']['image_id'],**kwargs)
