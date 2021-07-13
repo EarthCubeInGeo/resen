@@ -868,7 +868,9 @@ class Resen():
                 with open(os.path.join(core_dir,fn),'r') as f:
                     cores.extend(json.load(f))
             except json.decoder.JSONDecodeError:
-                print('WARNING: {} is not a valid JSON file! Skiping this file.'.format(fn))
+                print('WARNING: {} is not a valid JSON file! Skipping this file.'.format(fn))
+            except:
+                print('WARNING: {} can not be read. Skipping this file.'.format(fn))
 
         return cores
 
