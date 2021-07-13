@@ -864,6 +864,10 @@ class Resen():
         # for each JSON file in core directory, read in list of cores
         cores = []
         for fn in os.listdir(core_dir):
+
+            if os.path.splitext(fn)[-1].upper() != '.JSON':
+                continue # discard files that don't have the json extension
+
             try:
                 with open(os.path.join(core_dir,fn),'r') as f:
                     cores.extend(json.load(f))
