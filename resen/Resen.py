@@ -853,6 +853,8 @@ class Resen():
 
 
     def __get_valid_cores(self):
+        import glob
+
         # define core list directory
         core_dir = os.path.join(self.resen_root_dir,'cores')
 
@@ -863,10 +865,7 @@ class Resen():
 
         # for each JSON file in core directory, read in list of cores
         cores = []
-        for fn in os.listdir(core_dir):
-
-            if not fn.lower().endswith('json'):
-                continue # discard files that don't have the json extension
+        for fn in glob.glob1(core_dir,"*.[jJ][sS][oO][nN]"):
 
             try:
                 with open(os.path.join(core_dir,fn),'r') as f:
