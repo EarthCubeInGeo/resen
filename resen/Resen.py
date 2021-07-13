@@ -865,7 +865,7 @@ class Resen():
         cores = []
         for fn in os.listdir(core_dir):
 
-            if os.path.splitext(fn)[-1].upper() != '.JSON':
+            if not fn.lower().endswith('json'):
                 continue # discard files that don't have the json extension
 
             try:
