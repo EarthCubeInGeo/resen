@@ -874,7 +874,7 @@ class Resen():
                 with open(filename) as f:
                     cores.extend(json.load(f))
             except:
-                print(f'WARNING: Problem reading {filename} . Skipping.')
+                print(f'WARNING: Problem reading {filename}. Skipping.')
 
         return cores
 
