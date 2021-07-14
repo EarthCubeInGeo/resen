@@ -854,7 +854,6 @@ class Resen():
 
 
     def __get_valid_cores(self):
-
         # define core list directory
         core_dir = os.path.join(self.resen_root_dir,'cores')
 
@@ -864,12 +863,10 @@ class Resen():
             self.update_core_list()
 
         # for each JSON file in core directory, read in list of cores
-        cores = []
-
         json_files = glob.glob(os.path.join(core_dir, '*.json'))
 
+        cores = []
         for filename in sorted(json_files):
-
             try:
                 with open(filename) as f:
                     cores.extend(json.load(f))
