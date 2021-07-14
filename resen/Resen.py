@@ -868,7 +868,7 @@ class Resen():
 
         json_files = glob.glob(os.path.join(core_dir, '*.json'))
 
-        for filename in json_files:
+        for filename in sorted(json_files):
 
             try:
                 with open(filename) as f:
