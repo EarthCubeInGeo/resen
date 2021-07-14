@@ -865,15 +865,17 @@ class Resen():
 
         # for each JSON file in core directory, read in list of cores
         cores = []
-        for fn in glob.glob1(core_dir,"*.[jJ][sS][oO][nN]"):
+
+        json_files = glob.glob(os.path.join(core_dir, '*.json'))
+        JSON_files = glob.glob(os.path.join(core_dir, '*.JSON'))
+
+        for filename in json_files + JSON_files:
 
             try:
-                with open(os.path.join(core_dir,fn),'r') as f:
+                with open(filename) as f:
                     cores.extend(json.load(f))
-            except json.decoder.JSONDecodeError:
-                print('WARNING: {} is not a valid JSON file! Skipping this file.'.format(fn))
             except:
-                print('WARNING: {} can not be read. Skipping this file.'.format(fn))
+                print('WARNING: Problem reading {filename} . Skipping.'.format(filename=filename))
 
         return cores
 
