@@ -43,6 +43,7 @@ from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
 import platform   # NEEDED FOR WINDOWS QUICK FIX
 import requests
+import glob
 
 
 from .DockerHelper import DockerHelper
@@ -853,7 +854,6 @@ class Resen():
 
 
     def __get_valid_cores(self):
-        import glob
 
         # define core list directory
         core_dir = os.path.join(self.resen_root_dir,'cores')
@@ -867,15 +867,14 @@ class Resen():
         cores = []
 
         json_files = glob.glob(os.path.join(core_dir, '*.json'))
-        JSON_files = glob.glob(os.path.join(core_dir, '*.JSON'))
 
-        for filename in json_files + JSON_files:
+        for filename in json_files:
 
             try:
                 with open(filename) as f:
                     cores.extend(json.load(f))
             except:
-                print('WARNING: Problem reading {filename} . Skipping.'.format(filename=filename))
+                print(f'WARNING: Problem reading {filename} . Skipping.')
 
         return cores
 
