@@ -12,7 +12,7 @@ This will open the resen tool::
        |   / _|\__ \ _|| .` |
        |_|_\___|___/___|_|\_|
 
-    Resen 2020.2.1 -- Reproducible Software Environment
+    Resen 2021.1.0 -- Reproducible Software Environment
 
     [resen] >>>
 
