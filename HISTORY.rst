@@ -1,7 +1,7 @@
 
 .. :changelog:
 
-2021.1.0 (2021-07-23)
+2021.1.0 (2021-08-11)
 +++++++++++++++++++++
 
 - Update start jupyter command so that resen works with jupyter lab 3
