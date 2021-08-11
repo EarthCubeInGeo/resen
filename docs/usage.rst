@@ -66,8 +66,8 @@ Setup a New Bucket
    Next, the user is asked to specify the version of resen-core to use::
 
      Please choose a version of resen-core.
-     Available versions: 2019.1.0, 2020.1.0, 2020.2.0
-     >>> Select a version: 2020.2.0
+     Available versions: 2019.1.0, 2020.1.0, 2021.1.0
+     >>> Select a version: 2021.1.0
 
    Optionally, one may then specify a local directory to :ref:`mount <mounting>` into the bucket at ``/home/jovyan/mount``::
 
@@ -100,7 +100,7 @@ Setup a New Bucket
      amber
      =====
 
-     Resen-core Version:  2020.2.0
+     Resen-core Version:  2021.1.0
      Status:  running
      Jupyter Token:  e7a11fc1ea42a445807b4e24146b9908e1abff82bacbf6f2
      Jupyter Port:  9002
@@ -122,7 +122,7 @@ Work with a Bucket
 
     [resen] >>> list
     Bucket Name         Docker Image             Status
-    amber               2020.2.0                 running
+    amber               2021.1.0                 running
 
    If a bucket is running, it will consume system resources accordingly.
 
@@ -134,7 +134,7 @@ Work with a Bucket
 
     [resen] >>> list
     Bucket Name         Docker Image             Status
-    amber               2020.2.0                 exited
+    amber               2021.1.0                 exited
 
    The bucket will still exist and can be restarted at any time, even after quitting and restarting resen.
 
@@ -146,7 +146,7 @@ Work with a Bucket
 
     [resen] >>> status
     Bucket Name         Docker Image             Status
-    amber               2020.2.0                 running
+    amber               2021.1.0                 running
 
 4. Export bucket ``amber``::
 
