@@ -43,6 +43,7 @@ from pathlib import Path            # used to check whitelist paths
 from subprocess import Popen, PIPE  # used for selinux detection
 import platform   # NEEDED FOR WINDOWS QUICK FIX
 import requests
+import glob
 
 
 from .DockerHelper import DockerHelper
@@ -571,9 +572,10 @@ class Resen():
 
         # form python command to stop jupyter and execute it
         port = bucket['jupyter']['port']
-        python_cmd = 'from notebook.notebookapp import shutdown_server, list_running_servers; '
-        python_cmd += 'svrs = [x for x in list_running_servers() if x[\\\"port\\\"] == %s]; ' % (port)
-        python_cmd += 'sts = True if len(svrs) == 0 else shutdown_server(svrs[0]); print(sts)'
+        python_cmd = 'exec(\\\"try:  from jupyter_server.serverapp import shutdown_server, list_running_servers\\n'
+        python_cmd += 'except:  from notebook.notebookapp import shutdown_server, list_running_servers\\n'
+        python_cmd += 'svrs = [x for x in list_running_servers() if x[\\\\\\"port\\\\\\"] == %s]; ' % (port)
+        python_cmd += 'sts = True if len(svrs) == 0 else shutdown_server(svrs[0]); print(sts)\\\")'
         command = "bash -cl '%s/bin/python -c \"%s \"'" % (envpath,python_cmd)
         status = self.execute_command(bucket_name,command,detach=False)
 
@@ -862,13 +864,15 @@ class Resen():
             self.update_core_list()
 
         # for each JSON file in core directory, read in list of cores
+        json_files = glob.glob(os.path.join(core_dir, '*.json'))
+
         cores = []
-        for fn in os.listdir(core_dir):
+        for filename in sorted(json_files):
             try:
-                with open(os.path.join(core_dir,fn),'r') as f:
+                with open(filename) as f:
                     cores.extend(json.load(f))
-            except json.decoder.JSONDecodeError:
-                print('WARNING: {} is not a valid JSON file! Skiping this file.'.format(fn))
+            except:
+                print(f'WARNING: Problem reading {filename}. Skipping.')
 
         return cores
 
