@@ -18,9 +18,9 @@ Resen requires both python 3 and docker to be installed.
 
 1. Install `Python 3 <https://www.python.org/>`_
 2. Install `docker <https://docs.docker.com/install/>`_
-3. Install Resen with pip ``pip install git+https://github.com/EarthCubeInGeo/resen.git@v2021.1.0``
+3. Install Resen with pip ``pip install resen``
 
-Please refer to the `installation documentation <installation>` for more detailed instructions.
+Please refer to the `installation documentation <https://resen.readthedocs.io/en/latest/installation/index.html>` for more detailed instructions.
 
 Usage
 -----
@@ -32,10 +32,8 @@ For a list of available commands, use the ``help`` command::
 
 	[resen] >>> help
 
-`Resen Workflow Example <resen-workflow>`
+`Resen Workflow Example <https://resen.readthedocs.io/en/latest/usage.html#resen-workflow>`
 
 Documentation
 =============
 Complete documentation for Resen is available at https://resen.readthedocs.io/.
-
-small change 1
