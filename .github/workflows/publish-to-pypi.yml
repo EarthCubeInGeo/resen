@@ -3,10 +3,10 @@
 
 name: Publish resen to PyPI
 
-on: push
-# on:
-#   release:
-#     types: [published]
+# on: push
+on:
+  release:
+    types: [published]
 
 
 jobs:
@@ -29,6 +29,6 @@ jobs:
       - name: Publish distribution to Test PyPI
         uses: pypa/gh-action-pypi-publish@master
         with:
-          # password: ${{ secrets.PYPI_API_TOKEN }}
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          # password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          # repository_url: https://test.pypi.org/legacy/
