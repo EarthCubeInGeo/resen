@@ -37,3 +37,5 @@ For a list of available commands, use the ``help`` command::
 Documentation
 =============
 Complete documentation for Resen is available at https://resen.readthedocs.io/.
+
+small change 1
