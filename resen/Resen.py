@@ -48,6 +48,23 @@ import glob
 
 from .DockerHelper import DockerHelper
 
+def is_within_directory(directory, target):
+
+    abs_directory = os.path.abspath(directory)
+    abs_target = os.path.abspath(target)
+
+    prefix = os.path.commonprefix([abs_directory, abs_target])
+
+    return prefix == abs_directory
+
+def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+
+    for member in tar.getmembers():
+        member_path = os.path.join(path, member.name)
+        if not is_within_directory(path, member_path):
+            raise Exception("Attempted Path Traversal in Tar File")
+
+    tar.extractall(path, members, numeric_owner=numeric_owner) 
 
 class Resen():
     def __init__(self):
@@ -614,6 +631,7 @@ class Resen():
         Export a bucket
         '''
         # TODO: some kind of status bar would be useful - this takes a while
+        # TODO: maybe see if we can determine expected image size and free disk space
         # Should we include "human readable" metadata?
 
         # make sure the output filename has the .tgz or .tar.gz extension on it
@@ -630,16 +648,8 @@ class Resen():
 
             bucket_dir_path = Path(bucket_dir)
 
-            # try:
-
             # initialize manifest
             manifest = dict()
-
-            # # find container size and determine if there's enough disk space for the export
-            # container_size = self.bucket_diskspace(bucket_name)
-            # disk_space =
-            # if disk_space < container_size*3:
-            #     raise RuntimeError("Not enough disk space for image export!")
 
             if not img_repo:
                 img_repo = bucket['name'].lower()
@@ -682,14 +692,6 @@ class Resen():
 
         print('...Bucket export complete!')
 
-        # except (RuntimeError,tarfile.TarError) as e:
-        #     raise RuntimeError('Bucket Export Failed: {}'.format(str(e)))
-
-        # finally:
-        #     # remove temporary directory
-        #     # shutil.rmtree(bucket_dir)
-        #     bucket_dir.cleanup()
-
         return
 
 
@@ -706,7 +708,8 @@ class Resen():
 
         # untar bucket file
         with tarfile.open(filename) as tar:
-            tar.extractall(path=str(extract_dir))
+
+            safe_extract(tar, path=str(extract_dir))
 
         # read manifest
         with open(str(extract_dir.joinpath('manifest.json')),'r') as f:
@@ -734,7 +737,8 @@ class Resen():
         for mount in manifest['mounts']:
             # extract mount from tar file
             with tarfile.open(str(extract_dir.joinpath(mount[0]))) as tar:
-                tar.extractall(path=str(extract_dir))
+
+                safe_extract(tar, path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
             # remove mount tar file
             os.remove(str(extract_dir.joinpath(mount[0])))
@@ -887,9 +891,7 @@ class Resen():
             confighome = os.path.join(os.environ['HOME'],'.config')
         configpath = os.path.join(confighome, appname)
 
-        # TODO: add error checking
-        if not os.path.exists(configpath):
-            os.makedirs(configpath)
+        os.makedirs(configpath,exist_ok=True)
 
         return configpath
 
@@ -998,13 +1000,6 @@ class Resen():
 
     # TODO: def reset_bucket(self,bucket_name):
     # used to reset a bucket to initial state (stop existing container, delete it, create new container)
-
-#     def list_cores():
-#         # list available docker images
-#         # - list/pull docker image from docker hub
-# #     - docker pull: https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-from-docker-hub
-#         pass
-
 
 
 def main():
