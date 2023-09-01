@@ -1,6 +1,12 @@
 
 .. :changelog:
 
+2021.1.0 (2021-08-11)
++++++++++++++++++++++
+
+- Update start jupyter command so that resen works with jupyter lab 3
+- Fixes #85, a bug which caused downloading images to fail on windows computer because progress bars were not generated in a system agnostic way
+
 2020.2.1 (2020-11-12)
 +++++++++++++++++++++
 
