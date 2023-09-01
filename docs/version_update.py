@@ -4,7 +4,7 @@ import re
 import os
 import fileinput
 
-old_version = '2020.2.0'
+old_version = '2021.1.0a'
 new_version = '2021.1.0'
 
 for root, dirs, files in os.walk('..'):
