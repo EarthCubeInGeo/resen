@@ -48,6 +48,23 @@ import glob
 
 from .DockerHelper import DockerHelper
 
+def is_within_directory(directory, target):
+
+    abs_directory = os.path.abspath(directory)
+    abs_target = os.path.abspath(target)
+
+    prefix = os.path.commonprefix([abs_directory, abs_target])
+
+    return prefix == abs_directory
+
+def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+
+    for member in tar.getmembers():
+        member_path = os.path.join(path, member.name)
+        if not is_within_directory(path, member_path):
+            raise Exception("Attempted Path Traversal in Tar File")
+
+    tar.extractall(path, members, numeric_owner=numeric_owner) 
 
 class Resen():
     def __init__(self):
@@ -691,7 +708,8 @@ class Resen():
 
         # untar bucket file
         with tarfile.open(filename) as tar:
-            tar.extractall(path=str(extract_dir))
+
+            safe_extract(tar, path=str(extract_dir))
 
         # read manifest
         with open(str(extract_dir.joinpath('manifest.json')),'r') as f:
@@ -719,7 +737,8 @@ class Resen():
         for mount in manifest['mounts']:
             # extract mount from tar file
             with tarfile.open(str(extract_dir.joinpath(mount[0]))) as tar:
-                tar.extractall(path=str(extract_dir))
+
+                safe_extract(tar, path=str(extract_dir))
                 local = extract_dir.joinpath(tar.getnames()[0])
             # remove mount tar file
             os.remove(str(extract_dir.joinpath(mount[0])))
