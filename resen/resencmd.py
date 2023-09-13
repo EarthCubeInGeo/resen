@@ -41,6 +41,9 @@ create : Create a new bucket by responding to the prompts provided."""
 
         # First, ask user about the bucket they want to create
         valid_versions = sorted([x['version'] for x in self.program.valid_cores])
+        if len(valid_versions)==0:
+            print('WARNING: No valid versions of resen-core are available! Please run the "update" command to pull resen cores from online.')
+            return
         print('Please choose a version of resen-core.')
         docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
 
