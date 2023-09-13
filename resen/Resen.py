@@ -851,7 +851,11 @@ class Resen():
         core_list_url = 'https://raw.githubusercontent.com/EarthCubeInGeo/resen-core/master/cores.json'
         core_filename = os.path.join(self.resen_root_dir,'cores','cores.json')
 
-        r = requests.get(core_list_url)
+        try:
+            r = requests.get(core_list_url)
+        except requests.exceptions.SSLError as e:
+            print(f"WARNING: Couldn't update RESEN cores from {core_list_url}! If you're using a VPN, try turning that off.")
+            return
         with open(core_filename, 'wb') as f:
             f.write(r.content)
 
