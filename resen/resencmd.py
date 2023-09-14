@@ -42,7 +42,8 @@ create : Create a new bucket by responding to the prompts provided."""
         # First, ask user about the bucket they want to create
         valid_versions = sorted([x['version'] for x in self.program.valid_cores])
         if len(valid_versions)==0:
-            print('WARNING: No valid versions of resen-core are available! Please run the "update" command to pull resen cores from online.')
+            print('WARNING: No valid versions of resen-core are available! Please run'
+                  ' the "update" command to pull resen cores from online.')
             return
         print('Please choose a version of resen-core.')
         docker_image = self.get_valid_version('>>> Select a version: ',valid_versions)
@@ -57,7 +58,8 @@ create : Create a new bucket by responding to the prompts provided."""
         answer = self.get_yn('>>> Mount storage to /home/jovyan/mount? (y/n): ')
         while answer == 'y':
             local_path = self.get_valid_local_path('>>> Enter local path: ')
-            container_path = self.get_valid_container_path('>>> Enter bucket path: ','/home/jovyan/mount')
+            container_path = self.get_valid_container_path('>>> Enter bucket path: ',
+                                                           '/home/jovyan/mount')
             permissions = self.get_permissions('>>> Enter permissions (r/rw): ')
             mounts.append([local_path,container_path,permissions])
             answer = self.get_yn('>>> Mount additional storage to /home/jovyan/mount? (y/n): ')
