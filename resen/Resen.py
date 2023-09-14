@@ -862,6 +862,11 @@ class Resen():
         self.valid_cores = self.__get_valid_cores()
 
 
+    def update_docker_settings(self):
+        #get docker inputs from resen cmd line
+        self.valid_cores = self.__get_win_vbox_map(True)
+
+
     def __get_valid_cores(self):
         # define core list directory
         core_dir = os.path.join(self.resen_root_dir,'cores')
@@ -977,18 +982,48 @@ class Resen():
         except FileNotFoundError:
             return False
 
-    def __get_win_vbox_map(self):
+
+    def __get_win_vbox_map(self, reset=False):
         # quick fix for determining windows with docker tool box
         if platform.system().startswith('Win'):
-            print('If your are unsure of the appropriate responses below, please refer to the Resen documentation (https://resen.readthedocs.io/en/latest/installation/installation.windows.html#docker) for more details and assistance.')
-            rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
-            if rsp == 'y':
-                print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
-                hostpath = input('Host machine path: ')
-                vmpath = input('Docker VM path: ')
 
-                return [hostpath,vmpath]
+            vm_info = os.path.join(self.resen_root_dir,'docker_toolbox_path_info.json')
 
+            # ask user about docker toolbox, save responses for future use
+            if reset or (not os.path.exists(vm_info)):
+                print('If your are unsure of the appropriate responses below, please refer to the Resen documentation (https://resen.readthedocs.io/en/latest/installation/installation.windows.html#docker) for more details and assistance.')
+                while True:
+                    rsp = input('Resen appears to be running on a Windows system.  Are you using Docker Toolbox? (y/n): ')
+                    if rsp == 'y':
+                        print('Please specify the mapping between shared folders on the host machine and the Docker VM.')
+                        hostpath = input('Host machine path: ')
+                        vmpath = input('Docker VM path: ')
+
+                        print("WARNING: Resen will remember that you're using Docker Toolbox. To change these settings later, run the 'change_settings' command.")
+                        save_dict = {}
+                        save_dict["host_machine_path"] = hostpath
+                        save_dict["docker_vm_path"] = vmpath
+                        with open(vm_info, 'w') as f:
+                            json.dump(save_dict, f)
+
+                        return [hostpath,vmpath]
+                    elif rsp == 'n':
+                        print("WARNING: Resen will remember that you're NOT using Docker Toolbox. To change these settings later, run the 'change_settings' command.")
+                        save_dict = {}
+                        with open(vm_info, 'w') as f:
+                            json.dump(save_dict, f)
+                        return
+                    else:
+                        print("Invalid input. Please type 'y' or 'n'")
+            else:
+                with open(vm_info, 'r') as f:
+                    vm_info_dict = json.load(f)
+                try:
+                    hostpath = vm_info_dict["host_machine_path"]
+                    vmpath = vm_info_dict["docker_vm_path"]
+                    return [hostpath, vmpath]
+                except Exception as e:
+                    return
 
 
     def __trim(self,string,length):

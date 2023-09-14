@@ -337,6 +337,10 @@ import : Import a bucket from a .tgz file by providing input."""
         """update : Update default list of resen-cores available."""
         self.program.update_core_list()
 
+    def do_change_settings(self,arg):
+        """update : Change your docker settings for Windows."""
+        self.program.update_docker_settings()
+
     def do_quit(self,arg):
         """quit : Terminates the application."""
         # turn off currently running buckets or leave them running? leave running but
