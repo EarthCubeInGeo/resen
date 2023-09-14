@@ -51,13 +51,25 @@ class DockerHelper():
             kwargs['volumes'][host] = temp
 
         # check if we have image
-        local_image_ids = [x.id for x in self.docker.images.list()]
+        try:
+            local_image_ids = [x.id for x in self.docker.images.list()]
+        except Exception as e:
+            print("Problem getting the list of images!")
+            print(e)
+            raise
+
         # if not, pull it
         if bucket['image']['image_id'] not in local_image_ids:
             self.stream_pull_image(bucket['image'])
 
         # start the container
-        container = self.docker.containers.create(bucket['image']['image_id'],**kwargs)
+        try:
+            container = self.docker.containers.create(bucket['image']['image_id'],**kwargs)
+        except Exception as e:
+            print("Problem creating the Bucket!")
+            print(e)
+            raise
+
 
         return container.id, container.status
 
