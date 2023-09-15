@@ -20,7 +20,13 @@ class DockerHelper():
         # What does container.reload() do?  Do we need it?  Where?
         self.container_prefix = 'resen_'
 
-        self.docker = docker.from_env()
+        try:
+            self.docker = docker.from_env()
+        except Exception as e:
+            print("Error creating the docker client. Be sure to allow the  "
+                  "default Docker socket in Advanced Docker desktop Settings. ")
+            print(e)
+            raise
 
     # def create_container(self,**input_kwargs):
     def create_container(self,bucket):
@@ -55,6 +61,8 @@ class DockerHelper():
             local_image_ids = [x.id for x in self.docker.images.list()]
         except Exception as e:
             print("Problem getting the list of images!")
+            print("Be sure to allow the  "
+                  "default Docker socket in Advanced Docker desktop Settings. ")
             print(e)
             raise
 
