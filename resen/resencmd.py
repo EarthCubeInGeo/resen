@@ -389,7 +389,7 @@ class ResenCmd(cmd.Cmd):
         self.program.update_core_list()
 
     def do_change_settings(self, args):
-        """update : Change your docker settings for Windows."""
+        """change_settings : Change your docker settings for Windows."""
 
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
