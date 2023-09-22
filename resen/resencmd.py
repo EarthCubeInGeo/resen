@@ -402,7 +402,7 @@ class ResenCmd(cmd.Cmd):
 
     def do_quit(self, args):
         """quit : Terminates the application."""
-        # turn off currently running buckets or leave them running? leave running but
+        # TODO: turn off currently running buckets or leave them running? leave running but
 
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
@@ -411,9 +411,6 @@ class ResenCmd(cmd.Cmd):
 
         print("Exiting")
         return True  # We must return True for RESEN to quit!
-
-    do_exit = do_quit  # TODO: get rid of exit? "quit" is sufficient
-    do_EOF = do_quit  # TODO: get rid of EOF? "quit" is sufficient
 
     def emptyline(self):
         pass
