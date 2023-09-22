@@ -200,7 +200,8 @@ class ResenCmd(cmd.Cmd):
         )
 
         print(
-            f'By default, the output image will be named "{bucket_name.lower()}" and tagged "latest".'
+            "By default, the output image will be named "
+            f"'{bucket_name.lower()}' and tagged 'latest'."
         )
         rsp = self.get_yn(">>> Would you like to change the name and tag? (y/n): ")
         if rsp == "y":
@@ -217,7 +218,8 @@ class ResenCmd(cmd.Cmd):
         total_size = 0.0
         if len(report["storage"]) > 0:
             print(
-                f"The following local directories are mounted to the bucket (total {int(report['total_storage'])} MB):"
+                "The following local directories are mounted to the bucket (total "
+                f"{int(report['total_storage'])} MB):"
             )
             for mount in report["storage"]:
                 print(mount["local"])
@@ -240,7 +242,8 @@ class ResenCmd(cmd.Cmd):
         required = max(report["container"] * 3.0, output * 2.0)
 
         print(
-            f"This export could require up to {int(required)} MB of disk space to complete and will produce an output file up to {int(output)} MB."
+            f"This export could require up to {int(required)} MB of disk space to complete "
+            "and will produce an output file up to {int(output)} MB."
         )
         rsp = self.get_yn(">>> Are you sure you would like to continue? (y/n): ")
         if rsp == "n":
@@ -288,7 +291,8 @@ class ResenCmd(cmd.Cmd):
         resen_home_dir = self.program.resen_home_dir
         default_import = os.path.join(resen_home_dir, bucket_name)
         print(
-            f"The default directory to extract the bucket metadata and mounts to is {default_import}."
+            "The default directory to extract the bucket metadata and mounts to is "
+            f"{default_import}."
         )
         rsp = self.get_yn(
             ">>> Would you like to specify an alternate directory? (y/n): "
