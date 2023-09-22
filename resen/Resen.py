@@ -29,7 +29,6 @@
 
 
 import os
-import cmd  # for command line interface
 import json  # used to store bucket manifests locally and for export
 import time  # used for waiting (time.sleep())
 import socket  # find available port
