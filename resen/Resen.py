@@ -105,7 +105,7 @@ class Resen:
                 params = json.load(f)
         except FileNotFoundError:
             # if config file doesn't exist, initialize and empty list
-            params = list()
+            params = []
 
         self.buckets = params
         self.bucket_names = [x["name"] for x in self.buckets]
@@ -140,7 +140,7 @@ class Resen:
         if bucket_name in self.bucket_names:
             raise ValueError(f"Bucket with name: {bucket_name} already exists!")
 
-        params = dict()
+        params = {}
         params["name"] = bucket_name
         params["image"] = None
         params["container"] = None
@@ -174,10 +174,10 @@ class Resen:
         # are other buckets using the same image?
         # if so, we shouldn't try to remove the image!
         rm_image_id = bucket["image"]["image_id"]
-        buckets_with_same_id = list()
-        for x in self.buckets:
-            other_id = x["image"]["image_id"]
-            other_name = x["name"]
+        buckets_with_same_id = []
+        for bucket in self.buckets:
+            other_id = bucket["image"]["image_id"]
+            other_name = bucket["name"]
             if other_id == rm_image_id and other_name != bucket_name:
                 buckets_with_same_id.append(other_name)
 
@@ -225,8 +225,8 @@ class Resen:
         valid_versions = [x["version"] for x in self.valid_cores]
         if not docker_image in valid_versions:
             raise ValueError(
-                "Invalid resen-core version %s. Valid versions: %s"
-                % (docker_image, ", ".join(valid_versions))
+                f"Invalid resen-core version {docker_image}. Valid versions: "
+                f"{', '.join(valid_versions)}"
             )
 
         ind = valid_versions.index(docker_image)
@@ -727,7 +727,7 @@ class Resen:
 
         if not extract_dir:
             extract_dir = (
-                Path(filename).resolve().with_name("resen_{}".format(bucket_name))
+                Path(filename).resolve().with_name(f"resen_{bucket_name}")
             )
         else:
             extract_dir = Path(extract_dir)
@@ -746,7 +746,7 @@ class Resen:
 
         if not img_repo:
             img_repo = manifest["image_repo"]
-        full_repo = "earthcubeingeo/{}".format(img_repo)
+        full_repo = f"earthcubeingeo/{img_repo}"
 
         if not img_tag:
             img_tag = manifest["image_tag"]
@@ -845,8 +845,8 @@ class Resen:
             print("Jupyter Port: ", bucket["jupyter"]["port"])
             if bucket["jupyter"]["token"]:
                 print(
-                    "Jupyter lab URL: http://localhost:%s/?token=%s"
-                    % (bucket["jupyter"]["port"], bucket["jupyter"]["token"])
+                    f"Jupyter lab URL: http://localhost:{bucket['jupyter']['port']}/?"
+                    f"token={bucket['jupyter']['token']}"
                 )
 
             print("\nStorage:")
@@ -887,7 +887,8 @@ class Resen:
             print(exc)
             return
             # print(
-            #     f"WARNING: Couldn't update RESEN cores from {core_list_url}! If you're using a VPN, try turning that off."
+            #     f"WARNING: Couldn't update RESEN cores from {core_list_url}! "
+            #     "If you're using a VPN, try turning that off."
             # )
             # return
         with open(core_filename, "wb") as f:
@@ -962,8 +963,7 @@ class Resen:
             return False
         except PermissionError:  # errno.EPERM
             return True  # Operation not permitted (i.e., process exists)
-        else:
-            return True  # no error, we can send a signal to the process
+        return True  # no error, we can send a signal to the process
 
     def __lock(self):
         # dev note: if we want to be more advanced, need psutil as dependency
@@ -979,9 +979,8 @@ class Resen:
                 if self.__process_exists(pid):
                     raise RuntimeError("Another instance of Resen is already running!")
 
-        telem = "%d" % (cur_pid)
         with open(self.__lockfile, "w") as f:
-            f.write(telem)
+            f.write(str(cur_pid))
         self.__locked = True
 
     def __unlock(self):
@@ -998,12 +997,12 @@ class Resen:
 
     def __detect_selinux(self):
         try:
-            pop = Popen(["/usr/sbin/getenforce"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            output, _ = pop.communicate()
-            output = output.decode("utf-8").strip("\n")
-            rc = pop.returncode
+            with Popen(["/usr/sbin/getenforce"], stdin=PIPE, stdout=PIPE, stderr=PIPE) as pop:
+                output, _ = pop.communicate()
+                output = output.decode("utf-8").strip("\n")
+                return_code = pop.returncode
 
-            if rc == 0 and output == "Enforcing":
+            if return_code == 0 and output == "Enforcing":
                 return True
             return False
         except FileNotFoundError:
@@ -1075,7 +1074,8 @@ class Resen:
         self.__unlock()
 
     # TODO: def reset_bucket(self,bucket_name):
-    # used to reset a bucket to initial state (stop existing container, delete it, create new container)
+    # used to reset a bucket to initial state (stop existing container, 
+    # delete it, create new container)
 
 
 def main():  # TODO: what's this for?

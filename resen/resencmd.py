@@ -55,7 +55,7 @@ class ResenCmd(cmd.Cmd):
         msg = "Local directories can be mounted to /home/jovyan/mount in a bucket.  "
         msg += "You can specify either r or rw privileges for each directory mounted.  "
         print(msg)
-        mounts = list()
+        mounts = []
 
         # query for mounts to mount
         answer = self.get_yn(">>> Mount storage to /home/jovyan/mount? (y/n): ")
@@ -407,10 +407,10 @@ class ResenCmd(cmd.Cmd):
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
             print("WARNING: 'quit' takes no args. See 'help quit'.")
-            return
+            return False
 
         print("Exiting")
-        return True  # TODO: why return True? why not just return
+        return True  # We must return True for RESEN to quit!
 
     do_exit = do_quit  # TODO: get rid of exit? "quit" is sufficient
     do_EOF = do_quit  # TODO: get rid of EOF? "quit" is sufficient
@@ -441,7 +441,8 @@ class ResenCmd(cmd.Cmd):
 
     def get_valid_name(self, msg):
         print(
-            "Valid names may not contain spaces and must start with a letter and be less than 20 characters long."
+            "Valid names may not contain spaces and must start with a letter and be "
+            "less than 20 characters long."
         )
         while True:
             name = input(msg)
@@ -482,8 +483,7 @@ class ResenCmd(cmd.Cmd):
             }
             if check[pathtype]:
                 return str(path)
-            else:
-                print("Cannot find local path entered.")
+            print("Cannot find local path entered.")
 
     def get_valid_container_path(self, msg, base):
         while True:
@@ -491,8 +491,7 @@ class ResenCmd(cmd.Cmd):
             path = pathlib.PurePosixPath(path)
             if base in [str(x) for x in list(path.parents)]:
                 return str(path)
-            else:
-                print(f"Invalid path. Must start with: {base}")
+            print(f"Invalid path. Must start with: {base}")
 
     def get_permissions(self, msg):
         valid_inputs = ["r", "rw"]
@@ -500,10 +499,9 @@ class ResenCmd(cmd.Cmd):
             answer = input(msg)
             if answer in valid_inputs:
                 return answer
-            else:
-                print(
-                    f"Invalid input. Valid input are {valid_inputs[0]} or {valid_inputs[1]}."
-                )
+            print(
+                f"Invalid input. Valid input are {valid_inputs[0]} or {valid_inputs[1]}."
+            )
 
     def get_valid_tag(self, msg):
         while True:
