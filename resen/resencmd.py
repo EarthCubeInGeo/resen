@@ -101,7 +101,7 @@ class ResenCmd(cmd.Cmd):
         remove bucket_name : Remove bucket named bucket_name."""
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
-            print("Syntax Error. See 'help remove_bucket'.")
+            print("Syntax Error. See 'help remove'.")
             return
 
         bucket_name = inputs[0]
