@@ -498,6 +498,8 @@ class Resen:
         if (detach and code is not None) or (not detach and code != 0):
             raise RuntimeError(f"Failed to execute command {command}")
 
+        return result
+
     def set_sudo(self, bucket_name, password="ganimede"):
         """
         Add jovyan user to sudoers
@@ -541,7 +543,8 @@ class Resen:
         token = "%048x" % random.randrange(16**48)
         command = (
             f"bash -cl 'source {envpath}/bin/activate && jupyter lab --no-browser --ip 0.0.0.0 "
-            f"--port {container_port} --NotebookApp.token={token} --KernelSpecManager.ensure_native_kernel=False'"
+            f"--port {container_port} --NotebookApp.token={token} "
+            "--KernelSpecManager.ensure_native_kernel=False'"
         )
 
         # exectute command to start jupyter server
@@ -576,12 +579,13 @@ class Resen:
         # if jupyter server not running, do nothing
         pid = self.get_jupyter_pid(bucket_name)
         if pid is None:
-            return True
+            return
 
         # Get the python environment path, if none found, default to py36
         envpath = bucket["image"].get("envpath", "/home/jovyan/envs/py36")
 
-        # form python command to stop jupyter and execute it #TODO: is there no more concise way to do this? lots of super long, hard-coded commands
+        # form python command to stop jupyter and execute it
+        # TODO: is there no more concise way to do this? lots of super long, hard-coded commands
         port = bucket["jupyter"]["port"]
         python_cmd = (
             'exec(\\"try:  from jupyter_server.serverapp import shutdown_server, '
@@ -617,7 +621,7 @@ class Resen:
         """
         Get PID for the jupyter server running in a particular bucket
         """
-        self.execute_command(bucket_name, "ps -ef", detach=False)
+        _, output = self.execute_command(bucket_name, "ps -ef", detach=False)
         output = output.decode("utf-8").split("\n")
 
         pid = None
