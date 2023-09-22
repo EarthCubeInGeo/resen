@@ -169,6 +169,7 @@ class Resen:
         if bucket["status"] == "running":
             raise RuntimeError(
                 f"ERROR: Bucket {bucket['name']} is running, cannot remove."
+                f"Stop the bucket first with 'stop {bucket['name']}'."
             )
 
         # are other buckets using the same image?
