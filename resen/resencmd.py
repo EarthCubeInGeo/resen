@@ -14,24 +14,27 @@
 import sys
 import cmd  # for command line interface
 import shlex
-import resen
-import socket
 import pathlib
 import os
-from pathlib import Path
+import resen
 
-version = resen.__version__
+VERSION = resen.__version__
 
 
 class ResenCmd(cmd.Cmd):
-    def __init__(self, resen):
+    def __init__(self, program_name):
         cmd.Cmd.__init__(self)
         self.prompt = "[resen] >>> "
-        self.program = resen
+        self.program = program_name
 
     def do_create(self, args):
         """Usage:
         create : Create a new bucket by responding to the prompts provided."""
+
+        _, num_inputs = self.parse_args(args)
+        if num_inputs != 0:
+            print("WARNING: 'create' takes no args. See 'help create'.")
+            return
 
         # First, ask user for bucket name
         print("Please enter a name for your bucket.")
@@ -82,9 +85,9 @@ class ResenCmd(cmd.Cmd):
                 self.program.add_storage(bucket_name, mount[0], mount[1], mount[2])
             self.program.create_container(bucket_name)
             print("Bucket created successfully!")
-        except Exception as e:
+        except Exception as exc:
             print("Bucket creation failed!")
-            print(e)
+            print(exc)
             return
 
         if start:
@@ -98,14 +101,14 @@ class ResenCmd(cmd.Cmd):
         remove bucket_name : Remove bucket named bucket_name."""
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
-            print("Syntax Error. Usage: remove_bucket bucket_name")
+            print("Syntax Error. See 'help remove_bucket'.")
             return
 
         bucket_name = inputs[0]
         try:
             self.program.remove_bucket(bucket_name)
-        except (ValueError, RuntimeError) as e:
-            print(e)
+        except (ValueError, RuntimeError) as exc:
+            print(exc)
             return
 
     def do_list(self, args):
@@ -128,7 +131,7 @@ class ResenCmd(cmd.Cmd):
             print("Syntax Error. See 'help status'.")
             return
 
-        status = self.program.list_buckets(names_only=names_only)
+        self.program.list_buckets(names_only=names_only)
 
     def do_status(self, args):
         """Usage:
@@ -143,9 +146,7 @@ class ResenCmd(cmd.Cmd):
             print("Syntax Error. See 'help status'.")
             return
 
-        status = self.program.list_buckets(
-            names_only=names_only, bucket_name=bucket_name
-        )
+        self.program.list_buckets(names_only=names_only, bucket_name=bucket_name)
 
     def do_start(self, args):
         """Usage:
@@ -153,10 +154,8 @@ class ResenCmd(cmd.Cmd):
         """
         inputs, num_inputs = self.parse_args(args)
 
-        if num_inputs == 1:
-            pass
-        else:
-            print("Syntax Error. See 'help start_jupyter'.")
+        if num_inputs != 1:
+            print("Syntax Error. See 'help start'.")
             return
 
         # get bucket name from input
@@ -166,8 +165,8 @@ class ResenCmd(cmd.Cmd):
                 bucket_name
             )  # does nothing if bucket already started
             self.program.start_jupyter(bucket_name)
-        except (ValueError, RuntimeError) as e:
-            print(e)
+        except (ValueError, RuntimeError) as exc:
+            print(exc)
             return
 
     def do_stop(self, args):
@@ -175,15 +174,15 @@ class ResenCmd(cmd.Cmd):
         stop bucket_name : Stop jupyter on bucket bucket_name."""
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
-            print("Syntax Error. Usage: stop_bucket bucket_name")
+            print("Syntax Error. See 'help stop'.")
             return
 
         bucket_name = inputs[0]
         try:
             self.program.stop_jupyter(bucket_name)
             self.program.stop_bucket(bucket_name)
-        except (ValueError, RuntimeError) as e:
-            print(e)
+        except (ValueError, RuntimeError) as exc:
+            print(exc)
             return
 
     def do_export(self, args):
@@ -191,7 +190,7 @@ class ResenCmd(cmd.Cmd):
         export bucket_name: Export bucket to a sharable *.tar file."""
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
-            print("Syntax Error. Usage: export_bucket bucket_name")
+            print("Syntax Error. See 'help export'.")
             return
 
         bucket_name = inputs[0]
@@ -201,9 +200,7 @@ class ResenCmd(cmd.Cmd):
         )
 
         print(
-            'By default, the output image will be named "{}" and tagged "latest".'.format(
-                bucket_name.lower()
-            )
+            f'By default, the output image will be named "{bucket_name.lower()}" and tagged "latest".'
         )
         rsp = self.get_yn(">>> Would you like to change the name and tag? (y/n): ")
         if rsp == "y":
@@ -220,8 +217,7 @@ class ResenCmd(cmd.Cmd):
         total_size = 0.0
         if len(report["storage"]) > 0:
             print(
-                "The following local directories are mounted to the bucket (total %s MB):"
-                % int(report["total_storage"])
+                f"The following local directories are mounted to the bucket (total {int(report['total_storage'])} MB):"
             )
             for mount in report["storage"]:
                 print(mount["local"])
@@ -230,8 +226,7 @@ class ResenCmd(cmd.Cmd):
             if rsp == "n":
                 for mount in report["storage"]:
                     rsp = self.get_yn(
-                        ">>> Include %s [%s MB]? (y/n): "
-                        % (mount["local"], mount["size"])
+                        f">>> Include {mount['local']} [{mount['size']} MB]? (y/n): "
                     )
                     if rsp == "n":
                         exclude_list.append(mount["local"])
@@ -245,33 +240,33 @@ class ResenCmd(cmd.Cmd):
         required = max(report["container"] * 3.0, output * 2.0)
 
         print(
-            "This export could require up to %s MB of disk space to complete and will produce an output file up to %s MB."
-            % (int(required), int(output))
+            f"This export could require up to {int(required)} MB of disk space to complete and will produce an output file up to {int(output)} MB."
         )
         rsp = self.get_yn(">>> Are you sure you would like to continue? (y/n): ")
         if rsp == "n":
             print("Export bucket canceled!")
             return
-        else:
-            try:
-                print(
-                    "Exporting bucket %s.  This will take several minutes."
-                    % bucket_name
-                )
-                self.program.export_bucket(
-                    bucket_name,
-                    file_name,
-                    exclude_mounts=exclude_list,
-                    img_repo=img_name,
-                    img_tag=img_tag,
-                )
-            except (ValueError, RuntimeError) as e:
-                print(e)
-                return
+        try:
+            print(f"Exporting bucket {bucket_name}. This will take several minutes.")
+            self.program.export_bucket(
+                bucket_name,
+                file_name,
+                exclude_mounts=exclude_list,
+                img_repo=img_name,
+                img_tag=img_tag,
+            )
+        except (ValueError, RuntimeError) as exc:
+            print(exc)
+            return
 
     def do_import(self, args):
         """Usage:
         import : Import a bucket from a .tgz file by providing input."""
+
+        _, num_inputs = self.parse_args(args)
+        if num_inputs != 0:
+            print("WARNING: 'import' takes no args. See 'help import'.")
+            return
 
         print("Please enter a name for your bucket.")
         bucket_name = self.get_valid_name(">>> Enter bucket name: ")
@@ -293,9 +288,7 @@ class ResenCmd(cmd.Cmd):
         resen_home_dir = self.program.resen_home_dir
         default_import = os.path.join(resen_home_dir, bucket_name)
         print(
-            "The default directory to extract the bucket metadata and mounts to is {}.".format(
-                default_import
-            )
+            f"The default directory to extract the bucket metadata and mounts to is {default_import}."
         )
         rsp = self.get_yn(
             ">>> Would you like to specify an alternate directory? (y/n): "
@@ -311,7 +304,7 @@ class ResenCmd(cmd.Cmd):
                         try:
                             os.makedirs(extract_dir)
                             break
-                        except:
+                        except Exception:
                             print("Invalid: Directory cannot be created!")
                 else:
                     dir_contents = os.listdir(extract_dir)
@@ -322,7 +315,7 @@ class ResenCmd(cmd.Cmd):
             extract_dir = default_import
 
         # query for aditional mounts
-        mounts = list()
+        mounts = []
         answer = self.get_yn(
             ">>> Mount additional storage to the imported bucket? (y/n): "
         )
@@ -338,7 +331,7 @@ class ResenCmd(cmd.Cmd):
             )
 
         # should we clean up the bucket archive?
-        msg = ">>> Remove %s after successful import? (y/n): " % str(file_name)
+        msg = f">>> Remove {str(file_name)} after successful import? (y/n): "
         remove_archive = self.get_yn(msg) == "y"
 
         # should we start jupyterlab when done creating bucket?
@@ -346,7 +339,7 @@ class ResenCmd(cmd.Cmd):
         start = self.get_yn(msg) == "y"
 
         try:
-            print("Importing bucket %s.  This may take several mintues." % bucket_name)
+            print(f"Importing bucket {bucket_name}. This may take several mintues.")
             print("...extracting bucket...")
             self.program.import_bucket(
                 bucket_name,
@@ -362,9 +355,9 @@ class ResenCmd(cmd.Cmd):
             for mount in mounts:
                 self.program.add_storage(bucket_name, mount[0], mount[1], mount[2])
             self.program.create_container(bucket_name, give_sudo=False)
-        except (ValueError, RuntimeError) as e:
+        except (ValueError, RuntimeError) as exc:
             print("Bucket import failed!")
-            print(e)
+            print(exc)
             return
 
         if start:
@@ -373,37 +366,56 @@ class ResenCmd(cmd.Cmd):
                 self.program.start_bucket(bucket_name)
                 print("...starting jupyterlab...")
                 self.program.start_jupyter(bucket_name)
-            except Exception as e:
-                print(e)
+            except Exception as exc:
+                print(exc)
                 return
 
         if remove_archive:
-            print("Deleting %s as requested." % str(file_name))
+            print(f"Deleting {str(file_name)} as requested.")
             os.remove(file_name)
 
-    def do_update(self, arg):
+    def do_update(self, args):
         """update : Update default list of resen-cores available."""
+
+        _, num_inputs = self.parse_args(args)
+        if num_inputs != 0:
+            print("WARNING: 'update' takes no args. See 'help update'.")
+            return
+
         self.program.update_core_list()
 
-    def do_change_settings(self, arg):
+    def do_change_settings(self, args):
         """update : Change your docker settings for Windows."""
+
+        _, num_inputs = self.parse_args(args)
+        if num_inputs != 0:
+            print(
+                "WARNING: 'change_settings' takes no args. See 'help change_settings'."
+            )
+            return
+
         self.program.update_docker_settings()
 
-    def do_quit(self, arg):
+    def do_quit(self, args):
         """quit : Terminates the application."""
         # turn off currently running buckets or leave them running? leave running but
-        print("Exiting")
-        return True
 
-    do_exit = do_quit
-    do_EOF = do_quit
+        _, num_inputs = self.parse_args(args)
+        if num_inputs != 0:
+            print("WARNING: 'quit' takes no args. See 'help quit'.")
+            return
+
+        print("Exiting")
+        return True  # TODO: why return True? why not just return
+
+    do_exit = do_quit  # TODO: get rid of exit? "quit" is sufficient
+    do_EOF = do_quit  # TODO: get rid of EOF? "quit" is sufficient
 
     def emptyline(self):
         pass
 
     def default(self, line):
-        print("Unrecognized command: '%s'. Use 'help'." % (str(line)))
-        pass
+        print(f"Unrecognized command: '{str(line)}'. Use 'help'.")
 
     def parse_args(self, args):
         inputs = shlex.split(args)
@@ -420,9 +432,7 @@ class ResenCmd(cmd.Cmd):
                 return answer
             else:
                 print(
-                    "Invalid input. Valid input are {} or {}.".format(
-                        valid_inputs[0], valid_inputs[1]
-                    )
+                    f"Invalid input. Valid input are {valid_inputs[0]} or {valid_inputs[1]}."
                 )
 
     def get_valid_name(self, msg):
@@ -448,17 +458,12 @@ class ResenCmd(cmd.Cmd):
                 return name
 
     def get_valid_version(self, msg, valid_versions):
-        print("Available versions: {}".format(", ".join(valid_versions)))
+        print(f"Available versions: {', '.join(valid_versions)}")
         while True:
             version = input(msg)
             if version in valid_versions:
                 return version
-            else:
-                print(
-                    "Invalid version. Available versions: {}".format(
-                        ", ".join(valid_versions)
-                    )
-                )
+            print(f"Invalid version. Available versions: {', '.join(valid_versions)}")
 
     def get_valid_local_path(self, msg, pathtype="directory"):
         while True:
@@ -483,7 +488,7 @@ class ResenCmd(cmd.Cmd):
             if base in [str(x) for x in list(path.parents)]:
                 return str(path)
             else:
-                print("Invalid path. Must start with: {}".format(base))
+                print(f"Invalid path. Must start with: {base}")
 
     def get_permissions(self, msg):
         valid_inputs = ["r", "rw"]
@@ -493,9 +498,7 @@ class ResenCmd(cmd.Cmd):
                 return answer
             else:
                 print(
-                    "Invalid input. Valid input are {} or {}.".format(
-                        valid_inputs[0], valid_inputs[1]
-                    )
+                    f"Invalid input. Valid input are {valid_inputs[0]} or {valid_inputs[1]}."
                 )
 
     def get_valid_tag(self, msg):
@@ -528,14 +531,13 @@ def main():
     # intro.append('|_|  \_\______|_____/|______|_| \_|'.center(width))
     # intro.append(''.center(width))
 
-    width = 48
-    intro = list()
+    intro = []
     intro.append("    ___ ___ ___ ___ _  _ ")
     intro.append("   | _ \ __/ __| __| \| |")
     intro.append("   |   / _|\__ \ _|| .` |")
     intro.append("   |_|_\___|___/___|_|\_|")
     intro.append("")
-    intro.append("Resen %s -- Reproducible Software Environment" % version)
+    intro.append(f"Resen {VERSION} -- Reproducible Software Environment")
     intro.append("")
     intro = "\n".join(intro)
 
