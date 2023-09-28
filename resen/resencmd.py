@@ -22,15 +22,28 @@ VERSION = resen.__version__
 
 
 class ResenCmd(cmd.Cmd):
+    """A class derived from cmd.Cmd, which provides unique command-line options
+    for the RESEN project.
+    """
+
     def __init__(self, program_name):
         cmd.Cmd.__init__(self)
         self.prompt = "[resen] >>> "
         self.program = program_name
 
     def do_create(self, args):
-        """Usage:
-        create : Create a new bucket by responding to the prompts provided."""
+        """Create a new bucket by responding to the prompts provided.
 
+        Parameters
+        ----------
+        args : iterable, optional
+            A placeholder for any command-line arguments provided.
+            This method takes no arguments.
+
+        Returns
+        -------
+        None
+        """
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
             print("WARNING: 'create' takes no args. See 'help create'.")
@@ -97,8 +110,32 @@ class ResenCmd(cmd.Cmd):
             self.program.start_jupyter(bucket_name)
 
     def do_remove(self, args):
-        """Usage:
-        remove bucket_name : Remove bucket named bucket_name."""
+        """Remove a bucket.
+
+        Parameters
+        ----------
+        args : iterable
+            `args` should only contain one input - the name
+            of the bucket to be removed.
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        do_list : List all resen buckets.
+
+        Examples
+        --------
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            2021.1.0                 exited
+        [resen] >>> remove bucket_1
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        [resen] >>>
+        """
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
             print("Syntax Error. See 'help remove'.")
@@ -112,9 +149,22 @@ class ResenCmd(cmd.Cmd):
             return
 
     def do_list(self, args):
-        """Usage:
-        >>> list \t\t: List all resen buckets.
-        >>> list --names \t: Print only bucket names.
+        """List all resen buckets.
+
+        Parameters
+        ----------
+        args : {'--names'}, optional
+            When this option is enabled, only the names of existing
+            buckets will be listed.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        [resen] >>> list
+        Bucket Name         Version                  Status
         """
         inputs, num_inputs = self.parse_args(args)
         names_only = False
@@ -125,7 +175,7 @@ class ResenCmd(cmd.Cmd):
                 if inputs[0] == "--names":
                     names_only = True
                 else:
-                    print("Syntax Error. See 'help status'.")
+                    print("Syntax Error. See 'help list'.")
                     return
         else:
             print("Syntax Error. See 'help status'.")
@@ -134,8 +184,39 @@ class ResenCmd(cmd.Cmd):
         self.program.list_buckets(names_only=names_only)
 
     def do_status(self, args):
-        """Usage:
-        >>> status bucket_name \t: Print status of bucket with name "bucket_name"
+        """Print the status of a bucket.
+
+        Parameters
+        ----------
+        args : iterable
+            `args` should only contain one input - the name
+            of the bucket whose status we are querying.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            2021.1.0                 exited
+        [resen] >>> status bucket_1
+        bucket_1
+        ========
+
+        Resen-core Version:  2021.1.0
+        Status:  exited
+        Jupyter Token:  None
+        Jupyter Port:  None
+
+        Storage:
+        Local                                   Bucket                                  Permissions
+
+        Ports:
+        Local          Bucket
+        9000           9000
+        [resen] >>>
         """
         inputs, num_inputs = self.parse_args(args)
         names_only = False
@@ -149,8 +230,45 @@ class ResenCmd(cmd.Cmd):
         self.program.list_buckets(names_only=names_only, bucket_name=bucket_name)
 
     def do_start(self, args):
-        """Usage:
-        >>> start bucket_name : Start jupyter on bucket bucket_name
+        # TODO: fix the method description below? is this really what the method does?
+        """Start the jupyter session for a bucket.
+
+        Parameters
+        ----------
+        args : iterable
+            `args` should only contain one input - the name
+            of the bucket to be started.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            2021.1.0                 exited
+        [resen] >>> start bucket_1
+        Jupyter lab can be accessed in a browser at:
+            http://localhost:9000/?token=b061adcedea96f3610441c7966bcea2c632d663ad9bb31d5
+        [resen] >>> status bucket_1
+        bucket_1
+        ========
+
+        Resen-core Version:  2021.1.0
+        Status:  running
+        Jupyter Token:  b061adcedea96f3610441c7966bcea2c632d663ad9bb31d5
+        Jupyter Port:  9000
+        Jupyter lab URL:
+            http://localhost:9000/?token=b061adcedea96f3610441c7966bcea2c632d663ad9bb31d5
+
+        Storage:
+        Local                                   Bucket                                  Permissions
+
+        Ports:
+        Local          Bucket
+        9000           9000
+        [resen] >>>
         """
         inputs, num_inputs = self.parse_args(args)
 
@@ -170,8 +288,30 @@ class ResenCmd(cmd.Cmd):
             return
 
     def do_stop(self, args):
-        """Usage:
-        stop bucket_name : Stop jupyter on bucket bucket_name."""
+        # TODO: fix the method description below? is this really what the method does?
+        """Stop the jupyter session for a bucket.
+
+        Parameters
+        ----------
+        args : iterable
+            `args` should only contain one input - the name
+            of the bucket to be stopped.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            2021.1.0                 running
+        [resen] >>> stop bucket_1
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            2021.1.0                 exited
+        [resen] >>>
+        """
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
             print("Syntax Error. See 'help stop'.")
@@ -186,8 +326,38 @@ class ResenCmd(cmd.Cmd):
             return
 
     def do_export(self, args):
-        """Usage:
-        export bucket_name: Export bucket to a sharable *.tar file."""
+        """Export bucket to a sharable *.tar file.
+
+        Parameters
+        ----------
+        args : iterable
+            `args` should only contain one input - the name
+            of the bucket to be shared in a *.tar file.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            2021.1.0                 exited
+        [resen] >>> export bucket_1
+        >>> Enter name for output tar file: bucket_1.tar
+        By default, the output image will be named 'bucket_1' and tagged 'latest'.
+        >>> Would you like to change the name and tag? (y/n): n
+        This export could require up to 9681 MB of disk space to complete and
+        will produce an output file up to 3227 MB.
+        >>> Are you sure you would like to continue? (y/n): y
+        Exporting bucket bucket_1. This will take several minutes.
+        Exporting bucket: bucket_1...
+        ...exporting image...
+        ...done
+        ...saving manifest
+        ...Bucket export complete!
+        [resen] >>>
+        """
         inputs, num_inputs = self.parse_args(args)
         if num_inputs != 1:
             print("Syntax Error. See 'help export'.")
@@ -243,7 +413,7 @@ class ResenCmd(cmd.Cmd):
 
         print(
             f"This export could require up to {int(required)} MB of disk space to complete "
-            "and will produce an output file up to {int(output)} MB."
+            f"and will produce an output file up to {int(output)} MB."
         )
         rsp = self.get_yn(">>> Are you sure you would like to continue? (y/n): ")
         if rsp == "n":
@@ -263,8 +433,44 @@ class ResenCmd(cmd.Cmd):
             return
 
     def do_import(self, args):
-        """Usage:
-        import : Import a bucket from a .tgz file by providing input."""
+        """Import a bucket from an appropriate sharable *.tar file.
+
+        The provided *.tar file must be a previously exported RESEN bucket.
+
+        Parameters
+        ----------
+        args : iterable, optional
+            A placeholder for any command-line arguments provided.
+            This method takes no arguments.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        [resen] >>> import
+        Please enter a name for your bucket.
+        Valid names may not contain spaces and must start with a letter and be
+        less than 20 characters long.
+        >>> Enter bucket name: bucket_1
+        >>> Enter name for input tar file: bucket_1.tar
+        >>> Would you like to keep the default name and tag for the imported image? (y/n): y
+        The default directory to extract the bucket metadata and mounts to is
+        /path/to/previous/bucket.
+        >>> Would you like to specify an alternate directory? (y/n): n
+        >>> Mount additional storage to the imported bucket? (y/n): n
+        >>> Remove bucket_1.tar after successful import? (y/n): n
+        >>> Start bucket and jupyterlab? (y/n): n
+        Importing bucket bucket_1. This may take several minutes.
+        ...extracting bucket...
+        ...adding ports...
+        ...adding mounts...
+        [resen] >>> list
+        Bucket Name         Version                  Status
+        bucket_1            latest                   created
+        [resen] >>>
+        """
 
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
@@ -343,7 +549,7 @@ class ResenCmd(cmd.Cmd):
         start = self.get_yn(msg) == "y"
 
         try:
-            print(f"Importing bucket {bucket_name}. This may take several mintues.")
+            print(f"Importing bucket {bucket_name}. This may take several minutes.")
             print("...extracting bucket...")
             self.program.import_bucket(
                 bucket_name,
@@ -379,7 +585,18 @@ class ResenCmd(cmd.Cmd):
             os.remove(file_name)
 
     def do_update(self, args):
-        """update : Update default list of resen-cores available."""
+        """Update default list of resen-cores available.
+
+        Parameters
+        ----------
+        args : iterable, optional
+            A placeholder for any command-line arguments provided.
+            This method takes no arguments.
+
+        Returns
+        -------
+        None
+        """
 
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
@@ -389,7 +606,18 @@ class ResenCmd(cmd.Cmd):
         self.program.update_core_list()
 
     def do_change_settings(self, args):
-        """change_settings : Change your docker settings for Windows."""
+        """Change your docker settings for Windows.
+
+        Parameters
+        ----------
+        args : iterable, optional
+            A placeholder for any command-line arguments provided.
+            This method takes no arguments.
+
+        Returns
+        -------
+        None
+        """
 
         _, num_inputs = self.parse_args(args)
         if num_inputs != 0:
@@ -401,7 +629,18 @@ class ResenCmd(cmd.Cmd):
         self.program.update_docker_settings()
 
     def do_quit(self, args):
-        """quit : Terminates the application."""
+        """Terminate the application.
+
+        Parameters
+        ----------
+        args : iterable, optional
+            A placeholder for any command-line arguments provided.
+            This method takes no arguments.
+
+        Returns
+        -------
+        None
+        """
         # TODO: turn off currently running buckets or leave them running? leave running but
 
         _, num_inputs = self.parse_args(args)
@@ -419,6 +658,17 @@ class ResenCmd(cmd.Cmd):
         print(f"Unrecognized command: '{str(line)}'. Use 'help'.")
 
     def parse_args(self, args):
+        """Parse additional args from terminal commands.
+
+        Parameters
+        ----------
+        args : iterable
+            Additional arguments from terminal commands.
+
+        Returns
+        -------
+        None
+        """
         inputs = shlex.split(args)
         num_inputs = len(inputs)
         return inputs, num_inputs
@@ -426,17 +676,47 @@ class ResenCmd(cmd.Cmd):
     # The following functions are highly specialized
 
     def get_yn(self, msg):
+        """Query user for valid input.
+
+        Valid input is either affirmative 'y' or negative 'n'. If neither was provided
+        as an input, the user will continue to be queried.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+
+        Returns
+        -------
+        string : {'y', 'n'}
+            Affirmative or negative response from user.
+        """
         valid_inputs = ["y", "n"]
         while True:
             answer = input(msg)
             if answer in valid_inputs:
                 return answer
-            else:
-                print(
-                    f"Invalid input. Valid input are {valid_inputs[0]} or {valid_inputs[1]}."
-                )
+            print(
+                f"Invalid input. Valid input are {valid_inputs[0]} or {valid_inputs[1]}."
+            )
 
     def get_valid_name(self, msg):
+        """Query user for valid bucket name.
+
+        Valid bucket names must be less than 20 characters long, must not
+        contain spaces, must start with an alphabetic character, and
+        must not be the same name as an existing bucket.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+
+        Returns
+        -------
+        string
+            Valid bucket name.
+        """
         print(
             "Valid names may not contain spaces and must start with a letter and be "
             "less than 20 characters long."
@@ -460,7 +740,29 @@ class ResenCmd(cmd.Cmd):
                 return name
 
     def get_valid_version(self, msg, valid_versions):
+        """Query user for valid resen-core version.
+
+        Valid resen-core versions are those pulled from github.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+
+        Returns
+        -------
+        string
+            Valid resen-core version.
+
+        See Also
+        --------
+        do_update : Update default list of resen-cores available.
+        """
         print(f"Available versions: {', '.join(valid_versions)}")
+        print(
+            "If no resen-core versions are available, run the 'update' command to "
+            "pull the cores from online."
+        )
         while True:
             version = input(msg)
             if version in valid_versions:
@@ -468,6 +770,18 @@ class ResenCmd(cmd.Cmd):
             print(f"Invalid version. Available versions: {', '.join(valid_versions)}")
 
     def get_valid_local_path(self, msg, pathtype="directory"):
+        """Query user for a valid local path.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+
+        Returns
+        -------
+        string
+            Valid (existing) local path.
+        """
         while True:
             path = input(msg)
             path = pathlib.Path(path)
@@ -483,6 +797,20 @@ class ResenCmd(cmd.Cmd):
             print("Cannot find local path entered.")
 
     def get_valid_container_path(self, msg, base):
+        """Query user for a valid Docker container path.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+        base : string
+            Base path for a valid Docker container path.
+
+        Returns
+        -------
+        string
+            Valid Docker container path.
+        """
         while True:
             path = input(msg)
             path = pathlib.PurePosixPath(path)
@@ -491,6 +819,19 @@ class ResenCmd(cmd.Cmd):
             print(f"Invalid path. Must start with: {base}")
 
     def get_permissions(self, msg):
+        """Query user for file permissions.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+
+        Returns
+        -------
+        string: {'r', 'rw'}
+            Valid file permissions are either 'r' for read or
+            'rw' for read-write.
+        """
         valid_inputs = ["r", "rw"]
         while True:
             answer = input(msg)
@@ -501,10 +842,33 @@ class ResenCmd(cmd.Cmd):
             )
 
     def get_valid_tag(self, msg):
+        """Query user for bucket tag.
+
+        Bucket tags are used in the *.tar import and export process.
+
+        Valid bucket tags must be less than 128 characters long, must not
+        contain spaces, must start with an alphabetic character, and
+        must contain lower-case letters.
+
+        Parameters
+        ----------
+        msg : string
+            Message to prompt user for input.
+
+        Returns
+        -------
+        string
+            Valid bucket tag.
+
+        See Also
+        --------
+        do_import : Import a bucket from an appropriate sharable *.tar file.
+        do_export : Export bucket to a sharable *.tar file.
+        """
         while True:
             tag = input(msg)
 
-            # check if bucket_name has spaces in it and is greater than 20 characters
+            # TODO check if bucket_name has spaces in it and is greater than 20 characters
             # also bucket name must start with a letter
             if " " in tag:
                 print("Tags may not contain spaces.")
@@ -519,6 +883,16 @@ class ResenCmd(cmd.Cmd):
 
 
 def main():
+    """Create ResenCmd instance and enter cmdloop().
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     # width = 45
     # intro = list()
     # # generated with http://patorjk.com/software/taag/#p=display&f=Big&t=RESEN
@@ -531,11 +905,11 @@ def main():
     # intro.append(''.center(width))
 
     intro = []
-    intro.append("    ___ ___ ___ ___ _  _ ")
-    intro.append("   | _ \ __/ __| __| \| |")
-    intro.append("   |   / _|\__ \ _|| .` |")
-    intro.append("   |_|_\___|___/___|_|\_|")
-    intro.append("")
+    intro.append(r"    ___ ___ ___ ___ _  _ ")
+    intro.append(r"   | _ \ __/ __| __| \| |")
+    intro.append(r"   |   / _|\__ \ _|| .` |")
+    intro.append(r"   |_|_\___|___/___|_|\_|")
+    intro.append(r"")
     intro.append(f"Resen {VERSION} -- Reproducible Software Environment")
     intro.append("")
     intro = "\n".join(intro)
