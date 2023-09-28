@@ -2,10 +2,9 @@
 
 import os
 import gzip
-import time
+import datetime
 import docker
 import requests
-import datetime
 
 # all the docker commands wrapped up nicely
 
@@ -23,38 +22,38 @@ class DockerHelper:
 
         try:
             self.docker = docker.from_env()
-        except Exception as e:
+        except Exception as exc:
             print(
                 "Error creating the docker client. Be sure to allow the  "
                 "default Docker socket in Advanced Docker desktop Settings. "
             )
-            print(e)
+            print(exc)
             raise
 
     # def create_container(self,**input_kwargs):
     def create_container(self, bucket):
         """
-        Create a docker container with the image, mounts, and ports set in this bucket.  If the image
-        does not exist locally, pull it.
+        Create a docker container with the image, mounts, and ports set in this bucket.
+        If the image does not exist locally, pull it.
         """
 
         # set up basic keyword argument dict
-        kwargs = dict()
+        kwargs = {}
         kwargs["name"] = self.container_prefix + bucket["name"]
         kwargs["command"] = "bash"
         kwargs["tty"] = True
-        kwargs["ports"] = dict()
+        kwargs["ports"] = {}
 
         # if bucket has ports, add these to kwargs
         for host, container, tcp in bucket["port"]:
             if tcp:
-                key = "%s/tcp" % (container)
+                key = f"{container}/tcp"
             else:
-                key = "%s/udp" % (container)
+                key = f"{container}/udp"
             kwargs["ports"][key] = host
 
         # if bucket has mounts, add these to kwargs
-        kwargs["volumes"] = dict()
+        kwargs["volumes"] = {}
         for host, container, permissions in bucket["storage"]:
             temp = {"bind": container, "mode": permissions}
             kwargs["volumes"][host] = temp
@@ -62,13 +61,13 @@ class DockerHelper:
         # check if we have image
         try:
             local_image_ids = [x.id for x in self.docker.images.list()]
-        except Exception as e:
+        except Exception as exc:
             print("Problem getting the list of images!")
             print(
                 "Be sure to allow the  "
                 "default Docker socket in Advanced Docker desktop Settings. "
             )
-            print(e)
+            print(exc)
             raise
 
         # if not, pull it
@@ -80,9 +79,9 @@ class DockerHelper:
             container = self.docker.containers.create(
                 bucket["image"]["image_id"], **kwargs
             )
-        except Exception as e:
+        except Exception as exc:
             print("Problem creating the Bucket!")
-            print(e)
+            print(exc)
             raise
 
         return container.id, container.status
@@ -96,7 +95,6 @@ class DockerHelper:
 
         if remove_image:
             self.docker.images.remove(bucket["image"]["image_id"])
-        return
 
     def start_container(self, bucket):
         """
@@ -146,44 +144,46 @@ class DockerHelper:
             return terminal_size.lines, terminal_size.columns
 
         # progress bar
-        def update_bar(sum_total, accumulated, t0, current_time, init_bar_chars=34):
+        def update_bar(sum_total, accumulated, t_0, current_time, init_bar_chars=34):
             """Updates the progress bar.
 
             Args:
                 sum_total: total number of bytes to download
                 accumulated: bytes already downloaded
-                t0: time when pulling image started
+                t_0: time when pulling image started
                 current_time: current time
                 init_bar_chars: default number of characters of the bar
                               including [,>, spaces,  and ],
                               e.g. [===>   ] would be 9 characters.
             """
             percentage = accumulated / sum_total * 100
-            time_info = "Elapsed t: %s" % truncate_secs(current_time - t0)
+            time_info = f"Elapsed t: {truncate_secs(current_time - t_0)}"
             bartext = "%5.1f %%, %5.3f/%4.2fGB %s" % (
                 percentage,
                 accumulated / 1024**3,
                 sum_total / 1024**3,
                 time_info,
             )
-            rows, columns = get_terminal_dims()
+            _, columns = get_terminal_dims()
             max_bar_length = max(5, columns - len(bartext) - 1)
             bar_chars = min(init_bar_chars, max_bar_length)
             nchars = int(percentage * (bar_chars - 3) / 100)
-            bar = "\r[" + nchars * "=" + ">" + (bar_chars - 3 - nchars) * " " + "]"
-            total_out = bar + bartext
+            loading_bar = (
+                "\r[" + nchars * "=" + ">" + (bar_chars - 3 - nchars) * " " + "]"
+            )
+            total_out = loading_bar + bartext
             max_out = min(columns, len(total_out))  # don't print beyond columns
             print(total_out[:max_out], end="")
 
-        print("Pulling image: {}:{}".format(image["repo"], image["version"]))
+        print(f"Pulling image: {image['repo']}:{image['version']}")
         print("   This may take some time...")
 
         id_list = []
         id_current = []
         id_total = 0
-        t0 = prev_time = datetime.datetime.now()
+        t_0 = prev_time = datetime.datetime.now()
         # define pull_image sha256
-        pull_image = "{}/{}@{}".format(image["org"], image["repo"], image["repodigest"])
+        pull_image = f"{image['org']}/{image['repo']}@{image['repodigest']}"
         try:
             # Use a lower level pull call to stream the pull
             for line in self.docker.api.pull(pull_image, stream=True, decode=True):
@@ -203,15 +203,13 @@ class DockerHelper:
                     continue
 
                 prev_time = current_time
-                update_bar(id_total, sum(id_current), t0, current_time)
+                update_bar(id_total, sum(id_current), t_0, current_time)
 
             # Last update of the progress bar:
-            update_bar(id_total, sum(id_current), t0, current_time)
-        except Exception as e:
+            update_bar(id_total, sum(id_current), t_0, current_time)
+        except Exception as exc:
             raise RuntimeError(
-                "\nException encountered while pulling image {}\nException: {}".format(
-                    pull_image, str(e)
-                )
+                f"\nException encountered while pulling image {pull_image}\nException: {str(exc)}"
             )
 
         # avoid erasing the progress bar at the end
@@ -219,16 +217,13 @@ class DockerHelper:
 
         # When pulling using repodigest sha256, no tag is assigned, so assign one
         docker_image = self.docker.images.get(pull_image)
-        docker_image.tag(
-            "{}/{}".format(image["org"], image["repo"]), tag=image["version"]
-        )
+        docker_image.tag(f"{image['org']}/{image['repo']}", tag=image["version"])
         print("Done!")
-
-        return
 
     def export_container(self, bucket, filename, repo, tag):
         """
-        Export existing container to a tared image file.  After tar file has been created, image of container is removed.
+        Export existing container to a tared image file.  After tar file has been created,
+        image of container is removed.
         """
 
         # TODO:
@@ -241,8 +236,8 @@ class DockerHelper:
         self.docker.api.timeout = 60.0 * 60.0 * 24.0
 
         # image_name = '{}:{}'.format(repo,tag)
-        full_repo = "{}/{}".format(bucket["image"]["org"], repo)
-        image_name = "{}:{}".format(full_repo, tag)
+        full_repo = f"{bucket['image']['org']}/{repo}"
+        image_name = f"{full_repo}:{tag}"
 
         try:
             # create new image from container
@@ -266,15 +261,13 @@ class DockerHelper:
             # reset default timeout
             self.docker.api.timeout = default_timeout
 
-        return
-
     def import_image(self, filename, repo, tag):
         """
         Import an image from a tar file.  Return the image ID.
         """
 
-        with open(str(filename), "rb") as f:
-            image = self.docker.images.load(f)[0]
+        with open(str(filename), "rb") as file:
+            image = self.docker.images.load(file)[0]
 
         # add tag
         image.tag(repo, tag)
@@ -283,10 +276,12 @@ class DockerHelper:
 
     def get_container_size(self, bucket):
         # determine the size of the container (disk space)
-        # docker container inspect (https://docs.docker.com/engine/reference/commandline/container_inspect/) should be able to be used
-        #   for this purpose, but it looks like the docker SDK equivilent (APIClient.inspect_container()) does not include fuctionality
-        #   for the --size flag (https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.container), so the dict returned
-        #   does not have size information
+        # docker container inspect
+        # (https://docs.docker.com/engine/reference/commandline/container_inspect/)
+        # should be able to be used for this purpose, but it looks like the docker SDK equivilent
+        # (APIClient.inspect_container()) does not include fuctionality for the --size flag
+        # (https://docker-py.readthedocs.io/en/stable/api.html#module-docker.api.container),
+        # so the dict returned does not have size information
 
         info = self.docker.api.containers(
             all=True, size=True, filters={"id": bucket["container"]}
