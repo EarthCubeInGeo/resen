@@ -881,6 +881,162 @@ class ResenCmd(cmd.Cmd):
             else:
                 return tag
 
+    def help_create(self):
+        """Print help statement for the 'create' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("create : Create a new bucket by responding to the prompts provided.")
+
+    def help_remove(self):
+        """Print help statement for the 'remove' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("remove bucket_name : Remove an existing bucket called bucket_name.")
+
+    def help_list(self):
+        """Print help statement for the 'list' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("list : List all existing buckets.")
+        print("list --names : List only the names of all existing buckets.")
+
+    def help_status(self):
+        """Print help statement for the 'status' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("status bucket_name : Print the status of a bucket called bucket_name.")
+
+    def help_start(self):
+        # TODO: fix this help message? are we starting a Docker container?
+        # Are we starting a jupyter session?
+        """Print help statement for the 'start' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("start bucket_name : Start a bucket called bucket_name.")
+
+    def help_stop(self):
+        # TODO: fix this help message? are we stopping a Docker container?
+        # Are we stopping a jupyter session?
+        """Print help statement for the 'stop' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("stop bucket_name : Stop a bucket called bucket_name.")
+
+    def help_export(self):
+        """Print help statement for the 'export' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print(
+            "export bucket_name : Export the bucket called bucket_name "
+            "to a *.tar file. Follow the prompts to name the *.tar file."
+        )
+
+    def help_import(self):
+        """Print help statement for the 'import' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print(
+            "import : Import a bucket from a *.tar file. "
+            "Follow the prompts to input the *.tar filepath and bucket name"
+        )
+
+    def help_update(self):
+        """Print help statement for the 'update' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("update : Update default list of resen-cores available.")
+
+    def help_change_settings(self):
+        """Print help statement for the 'change_settings' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print(
+            "change_settings : Follow the prompts to change your docker settings for Windows."
+        )
+
+    def help_quit(self):
+        """Print help statement for the 'quit' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("quit : Terminate the application.")
+
 
 def main():
     """Create ResenCmd instance and enter cmdloop().
