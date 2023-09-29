@@ -231,7 +231,7 @@ class ResenCmd(cmd.Cmd):
 
     def do_start(self, args):
         # TODO: fix the method description below? is this really what the method does?
-        """Start the jupyter session for a bucket.
+        """Start the jupyter session and Docker container for a bucket.
 
         Parameters
         ----------
@@ -288,8 +288,8 @@ class ResenCmd(cmd.Cmd):
             return
 
     def do_stop(self, args):
-        # TODO: fix the method description below? is this really what the method does?
-        """Stop the jupyter session for a bucket.
+        # TODO: confirm that this is a correct description for the function
+        """Stop the jupyter session and Docker container for a bucket.
 
         Parameters
         ----------
@@ -724,8 +724,6 @@ class ResenCmd(cmd.Cmd):
         while True:
             name = input(msg)
 
-            # check if bucket_name has spaces in it and is greater than 20 characters
-            # also bucket name must start with a letter
             if not name:
                 print("Please enter a vaild name.")
             elif " " in name:
@@ -786,7 +784,7 @@ class ResenCmd(cmd.Cmd):
             path = input(msg)
             path = pathlib.Path(path)
 
-            # define different checks for different types of path
+            # TODO: define different checks for different types of path
             check = {
                 "directory": path.is_dir(),
                 "file": path.is_file(),
@@ -868,8 +866,6 @@ class ResenCmd(cmd.Cmd):
         while True:
             tag = input(msg)
 
-            # TODO check if bucket_name has spaces in it and is greater than 20 characters
-            # also bucket name must start with a letter
             if " " in tag:
                 print("Tags may not contain spaces.")
             elif len(tag) > 128:
@@ -935,8 +931,6 @@ class ResenCmd(cmd.Cmd):
         print("status bucket_name : Print the status of a bucket called bucket_name.")
 
     def help_start(self):
-        # TODO: fix this help message? are we starting a Docker container?
-        # Are we starting a jupyter session?
         """Print help statement for the 'start' command.
 
         Parameters
@@ -950,8 +944,6 @@ class ResenCmd(cmd.Cmd):
         print("start bucket_name : Start a bucket called bucket_name.")
 
     def help_stop(self):
-        # TODO: fix this help message? are we stopping a Docker container?
-        # Are we stopping a jupyter session?
         """Print help statement for the 'stop' command.
 
         Parameters
@@ -1049,16 +1041,6 @@ def main():
     -------
     None
     """
-    # width = 45
-    # intro = list()
-    # # generated with http://patorjk.com/software/taag/#p=display&f=Big&t=RESEN
-    # intro.append(' _____  ______  _____ ______ _   _ '.center(width))
-    # intro.append('|  __ \|  ____|/ ____|  ____| \ | |'.center(width))
-    # intro.append('| |__) | |__  | (___ | |__  |  \| |'.center(width))
-    # intro.append('|  _  /|  __|  \___ \|  __| | . ` |'.center(width))
-    # intro.append('| | \ \| |____ ____) | |____| |\  |'.center(width))
-    # intro.append('|_|  \_\______|_____/|______|_| \_|'.center(width))
-    # intro.append(''.center(width))
 
     intro = []
     intro.append(r"    ___ ___ ___ ___ _  _ ")
