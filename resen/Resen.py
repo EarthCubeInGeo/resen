@@ -25,9 +25,11 @@
 #         - used to share and freeze buckets
 #         - track information about buckets (1st time using, which are running?)
 
-# The fuctions remove_storage and remove_port will probably be used MINMALLY.  Is it worth keeping them?
+# The fuctions remove_storage and remove_port will probably be used MINMALLY.
+# Is it worth keeping them?
 
 
+# TODO: do we need these in-line comments to explain what all the imports are for?
 import os
 import json  # used to store bucket manifests locally and for export
 import time  # used for waiting (time.sleep())
@@ -48,6 +50,20 @@ from .DockerHelper import DockerHelper
 
 
 def is_within_directory(directory, target):
+    """Check whether directory path is within target path.
+
+    Parameters
+    ----------
+    directory : pathlike
+        Pathlike object which may be the prefix path for `target`.
+    target : pathlike
+        Pathlike object which may contain `directory` as a prefix.
+
+    Returns
+    -------
+    bool
+        Returns True if `directory` is the prefix path for `target`.
+    """
     abs_directory = os.path.abspath(directory)
     abs_target = os.path.abspath(target)
 
@@ -57,6 +73,34 @@ def is_within_directory(directory, target):
 
 
 def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+    """Helper function to safely extract a TarFile, i.e., to avoid Path Traversal.
+
+    Parameters
+    ----------
+    tar : TarFile
+        TarFile to be extracted.
+    path : pathlike
+        Path to extraction location for `tar`.
+    members : list of TarInfo objects, default=None
+        See TarFile.getmembers and TarFile.extractall for more details.
+    numeric_owner : bool, default=False
+        See TarFile.extractall for more details.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    Exception
+        If path in `tar`
+
+    See Also
+    --------
+    TarFile.getmembers
+    TarFile.extractall
+    """
+    # TODO: complete the docstring above
     for member in tar.getmembers():
         member_path = os.path.join(path, member.name)
         if not is_within_directory(path, member_path):
@@ -66,7 +110,11 @@ def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
 
 
 class Resen:
+    # TODO: fix this class docstring?
+    """A class which takes care of Resen bucket management and host memory management."""
+
     def __init__(self):
+        """Class constructor."""
         # get configuration info
         self.resen_root_dir = self._get_config_dir()
         self.resen_home_dir = self._get_home_dir()
@@ -91,9 +139,25 @@ class Resen:
         self.storage_whitelist = ["/home/jovyan/mount"]
 
     def load_config(self):
+        """Load config file that contains information on existing buckets.
+
+        Load the resen config file which exists in self.resen_root_dir.
+        member variables, such as self.buckets, will be set.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        Resen._get_config_dir :
         """
-        Load config file that contains information on existing buckets.
-        """
+        # TODO: provide description for Resen._get_config_dir above
+
         # define config file name
         bucket_config = os.path.join(self.resen_root_dir, "buckets.json")
 
@@ -111,8 +175,19 @@ class Resen:
         self.bucket_names = [x["name"] for x in self.buckets]
 
     def save_config(self):
-        """
-        Save config file with information on existing buckets
+        """Save all bucket info to config file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        Resen._get_config_dir :
         """
         # define config file name
         bucket_config = os.path.join(self.resen_root_dir, "buckets.json")
@@ -121,20 +196,52 @@ class Resen:
             json.dump(self.buckets, f)
 
     def get_bucket(self, bucket_name):
+        """Retrieve a bucket object by its name.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket to be retrieved.
+
+        Returns
+        -------
+        type
+            Retrieved bucket
+
+        Raises
+        ------
+        ValueError
+            If `bucket_name` doesn't exist.
         """
-        Retrieve a bucket object by its name.  Raise an error if the bucket does not exist.
-        """
+        # TODO: what's the type of the returned bucket?? in docstring above
         try:
             ind = self.bucket_names.index(bucket_name)
         except ValueError:
-            raise ValueError("Bucket with name: %s does not exist!" % bucket_name)
+            raise ValueError(f"Bucket with name: {bucket_name} does not exist!")
 
         bucket = self.buckets[ind]
         return bucket
 
     def create_bucket(self, bucket_name):
-        """
-        Create "empty" bucket.  Only name assigned.
+        """Create an empty bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the empty bucket to be created.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If a bucket called `bucket_name` already exists.
+
+        See Also
+        --------
+        Resen.save_config : Save all bucket info to config file.
         """
         # raise error if bucket_name already in uses
         if bucket_name in self.bucket_names:
@@ -144,10 +251,10 @@ class Resen:
         params["name"] = bucket_name
         params["image"] = None
         params["container"] = None
-        params["port"] = list()
-        params["storage"] = list()
+        params["port"] = []
+        params["storage"] = []
         params["status"] = None
-        params["jupyter"] = dict()
+        params["jupyter"] = {}
         params["jupyter"]["token"] = None
         params["jupyter"]["port"] = None
 
@@ -157,10 +264,26 @@ class Resen:
         self.save_config()
 
     def remove_bucket(self, bucket_name):
-        """
-        Remove a bucket, including the corresponding container.
-        """
+        """Remove a bucket, including the corresponding Docker container.
 
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket to be removed.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If bucket called `bucket_name` is running.
+
+        See Also
+        --------
+        DockerHelper.remove_container : Remove the container associated with the provided bucket.
+        """
         self.update_bucket_statuses()
         bucket = self.get_bucket(bucket_name)
 
@@ -207,9 +330,34 @@ class Resen:
         self.save_config()
 
     def set_image(self, bucket_name, docker_image):
+        """Set the Docker image to use for a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket whose image will be set.
+        docker_image : string
+            The resen-core version which defines the Docker image for the bucket
+            called `bucket_name`.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If the bucket called `bucket_name` has already been started.
+        ValueError
+            If `docker_image` is not in self.valid_cores.
+
+        See Also
+        --------
+        ResenCmd.do_create : Create a new bucket by responding to the prompts provided.
+        Resen.__get_valid_cores :
         """
-        Set the image to use in a bucket
-        """
+        # TODO : add method description for __get_valid_cores in docstring above.
+
         # TODO It should be fine to overwrite an existing image if the container hasn't been started yet
         # TODO would be helpful to save image org and repo as well for export purposes
         # TODO should we check if the image ID is available locally and if not pull it HERE insead of in the container creation?
@@ -236,9 +384,43 @@ class Resen:
         self.save_config()
 
     def add_storage(self, bucket_name, local, container, permissions="r"):
+        """Add a host machine storage location to the bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket for which storage will be mounted.
+        local : pathlike
+            Path to local mount location.
+        container : pathlike
+            Path to bucket.
+        permissions : {"r", "ro", "rw"}, default="r"
+            File permissions for mounted storage.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If bucket/container has already been created, storage cannot be added.
+        FileNotFoundError
+            If `local` does not exist.
+        FileExistsError
+            If `local` is already in use as storage for another bucket,
+            or if `container` is already in use as another bucket.
+        ValueError
+            If `container` is not a whitelisted location,
+            or if `permissions` is not one of the allowed values - {"r", "ro", "rw"}
+
+        See Also
+        --------
+        ResenCmd.do_create : Create a new bucket by responding to the prompts provided.
+        Resen.remove_storage : Remove a storage location for a bucket.
         """
-        Add a host machine storage location to the bucket.
-        """
+        # TODO: in  'Raises' section above, what does "whitelisted location" mean?
+
         # TODO: investiage difference between mounting a directory and fileblock
         #       See: https://docs.docker.com/storage/
 
@@ -299,8 +481,29 @@ class Resen:
         self.save_config()
 
     def remove_storage(self, bucket_name, local):
-        """
-        Remove a storage location from the bucket.
+        """Remove a storage location for a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket.
+        local : pathlike
+            Path to local mount location.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If bucket/container has already been started, storage cannot be removed.
+        FileNotFoundError
+            If `local` is not a storage location associated with `bucket_name`.
+
+        See Also
+        --------
+        Resen.add_storage : Add a host machine storage location to the bucket.
         """
 
         # get bucket
@@ -332,9 +535,39 @@ class Resen:
         self.save_config()
 
     def add_port(self, bucket_name, local=None, container=None, tcp=True):
+        """Add a port to a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket.
+        local : int, dafult=None
+            Port to be assigned to `bucket_name`.
+        container : pathlike, default=None
+            Path to bucket's container.
+        tcp : Bool, default=True
+            If True, TCP protocol will be used. Otherwise, the UDP protocol will be used. See
+            DockerHelper.create_continer for more.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If bucket/container has already been started, port cannot be added.
+        ValueError
+            If port already exists in list of ports.
+
+        See Also
+        --------
+        Resen.get_port : Find and bind an available port for a bucket.
+        Resen.remove_port : Remove a port from a bucket.
+        DockerHelper.create_container : Create a docker container with the image, mounts, and
+            ports set in this bucket. If the image does not exist locally, pull it.
         """
-        Add a port to the bucket
-        """
+        # TODO: fix docstring above...
         # get bucket
         bucket = self.get_bucket(bucket_name)
 
@@ -362,8 +595,29 @@ class Resen:
         self.save_config()
 
     def remove_port(self, bucket_name, local):
-        """
-        Remove a port from the bucket
+        """Remove a port from a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            The name of the bucket.
+        local : int, dafult=None
+            Port to be removed from `bucket_name`.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If bucket has already been started, port cannot be removed.
+        ValueError
+            If the port `local` is not assigned to `bucket_name`.
+
+        See Also
+        --------
+        Resen.add_port : Add a port to a bucket.
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -388,6 +642,21 @@ class Resen:
         self.save_config()
 
     def get_port(self):
+        """Find and bind an available port for a bucket.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        int
+            Available port which has been opened/bound. Defaults to 9000 when no ports have been assigned.
+
+        See Also
+        --------
+        Resen.add_port : Add a port to a bucket.
+        """
         # XXX: this is not atomic, so it is possible that another process might snatch up the port
         # TODO: check if port location exists on host - maybe not?  If usuer manually assigns port, ok to trust they know what they're doing?
         # TODO: check if port avaiable on host (from https://stackoverflow.com/questions/2470971/fast-way-to-test-if-a-port-is-in-use-using-python)
@@ -409,6 +678,30 @@ class Resen:
                     port += 1
 
     def create_container(self, bucket_name, give_sudo=True):
+        """Create a Docker container for a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket whose Docker container will be created.
+        give_sudo : bool, default=True
+            If True, set up sudo permissions for jovyan.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If `bucket_name` does not have an image assigned to it.
+
+        See Also
+        --------
+        DockerHelper.create_container : Create a docker container with the image, mounts, and
+            ports set in this bucket. If the image does not exist locally, pull it.
+        Resen.set_sudo : Add jovyan user to sudoers.
+        """
         # get bucket
         bucket = self.get_bucket(bucket_name)
 
@@ -429,8 +722,26 @@ class Resen:
             self.stop_bucket(bucket_name)
 
     def start_bucket(self, bucket_name):
-        """
-        Start the bucket
+        """Start a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket whose Docker container will be started.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If bucket called `bucket_name` does not have a Docker container created for it yet.
+            If the Docker container failed to start.
+
+        See Also
+        --------
+        DockerHelper.start_container : Start a container.
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -442,7 +753,7 @@ class Resen:
         # If a container hasn't been created yet, raise error
         if bucket["container"] is None:
             raise RuntimeError(
-                "Container for this bucket has not been created yet.  Cannot start bucket."
+                "Container for this bucket has not been created yet. Cannot start bucket."
             )
 
         # start the container and update status
@@ -455,8 +766,25 @@ class Resen:
             raise RuntimeError(f"Failed to start bucket {bucket['name']}")
 
     def stop_bucket(self, bucket_name):
-        """
-        Stop bucket
+        """Stop a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket whose Docker container will be stopped.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If the Docker container failed to stop.
+
+        See Also
+        --------
+        DockerHelper.stop_container : Stop a container.
         """
 
         self.update_bucket_statuses()
@@ -478,9 +806,35 @@ class Resen:
     def execute_command(
         self, bucket_name, command, user="jovyan", detach=True, tty=False
     ):
-        """
-        Execute a command in the bucket.  Returns the exit code and output form the command,
-        if applicable (if not detached?).
+        """Execute a command in the bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+        command : string
+            Command to be execute within bucket's Docker container.
+        user : string, default="jovyan"
+            User which will be used to execute command.
+        detach: Bool, default=True
+            If True, detach from exec command. See DockerHelper.execute_command for more details.
+        tty : Bool, default=True
+            If True, allocate a pseudo-TTY. See DockerHelper.execute_command for more details.
+
+        Returns
+        -------
+        int
+            The exit code from command execution.
+
+        Raises
+        ------
+        RuntimeError
+            If command fails to execute, i.e., if (detach is True and the exit code is not None) or
+            (detach is False and the exit code is not 0).
+
+        See Also
+        --------
+        DockerHelper.execute_command : Execute a command in a container.
         """
         self.update_bucket_statuses()
         # get bucket
@@ -501,16 +855,48 @@ class Resen:
         return result
 
     def set_sudo(self, bucket_name, password="ganimede"):
-        """
-        Add jovyan user to sudoers
+        """Add jovyan user to sudoers.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+        password : string
+            Password for user "jovyan".
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        Resen.execute_command : Execute a command in the bucket.
         """
         command = f"""bash -cl 'echo "jovyan:{password}" | chpasswd && usermod -aG sudo jovyan && sed --in-place "s/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\\1/" /etc/sudoers'"""  # TODO: test this
         self.execute_command(bucket_name, command, user="root", detach=False, tty=True)
 
     def start_jupyter(self, bucket_name, local_port=None, container_port=None):
-        """
-        Start a jupyter server in the bucket and open a web browser window to a jupyter lab session.
+        """Start a jupyter server for a bucket.
+
+        Open a web browser window to a jupyter lab session.
         Server will use the specified local and container ports (ports must be a matched pair!)
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+        local_port : int, default=None
+            Port from where jupyter server can be accessed. Must be a matched pair with `container_port`.
+        container_port :
+            Port from where jupyter server can be accessed. Must be a matched pair with `local_port`.
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        Resen.get_jupyter_pid : Get PID for the jupyter server running in a particular bucket.
         """
         # TODO:
         # Identify port ONLY with local port?
@@ -570,8 +956,25 @@ class Resen:
         webbrowser.open(url)
 
     def stop_jupyter(self, bucket_name):
-        """
-        Stop jupyter server
+        """Stop jupyter server for a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        RuntimeError
+            If the jupyter server fails to stop.
+
+        See Also
+        --------
+        Resen.get_jupyter_pid : Get PID for the jupyter server running in a particular bucket.
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -618,8 +1021,16 @@ class Resen:
         return
 
     def get_jupyter_pid(self, bucket_name):
-        """
-        Get PID for the jupyter server running in a particular bucket
+        """Get PID for the jupyter server running in a particular bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+
+        Returns
+        -------
+        None
         """
         _, output = self.execute_command(bucket_name, "ps -ef", detach=False)
         output = output.decode("utf-8").split("\n")
@@ -638,8 +1049,28 @@ class Resen:
     def export_bucket(
         self, bucket_name, outfile, exclude_mounts=[], img_repo=None, img_tag=None
     ):
-        """
-        Export a bucket
+        """Export a bucket to file.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+        outfile : string
+            Name of the file to save to.
+        excluded_mounts : list, default=[]
+            Mounted locations to exclude from the bucket export.
+        img_repo : string, default=None
+            Name of bucket when exporting. If None, the bucket will be exported as `bucket_name`.
+        img_tag : string, default=None
+            Tag used in import/export. If None, the tag defaults to "latest".
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        DockerHelper.export_container
         """
         # TODO: some kind of status bar would be useful - this takes a while
         # TODO: maybe see if we can determine expected image size and free disk space
@@ -708,8 +1139,6 @@ class Resen:
 
         print("...Bucket export complete!")
 
-        return
-
     def import_bucket(
         self,
         bucket_name,
@@ -720,15 +1149,38 @@ class Resen:
         remove_image_file=False,
     ):
         """
-        Import bucket from tgz file. Extract image and mounts. Set up new bucket
+        Import a bucket from file.
+
+        Import a bucket from a tgz file. Extract image and mounts. Set up new bucket
         with image and mounts. This does NOT add ports (these should be selected based
         on new local computer) and container is NOT created/started.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+        outfile : string
+            Name of the file to import from.
+        extract_dir : pathlike, default=None
+            Where to extract the bucket to.
+        img_repo : string, default=None
+            Name of bucket when importing.
+            If None, the bucket name defaults to that which was exported.
+        img_tag : string, default=None
+            Tag used in import/export.
+            If None, the tag defaults to that which was exported.
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        DockerHelper.import_image
         """
 
         if not extract_dir:
-            extract_dir = (
-                Path(filename).resolve().with_name(f"resen_{bucket_name}")
-            )
+            extract_dir = Path(filename).resolve().with_name(f"resen_{bucket_name}")
         else:
             extract_dir = Path(extract_dir)
 
@@ -782,11 +1234,24 @@ class Resen:
         if remove_image_file:
             os.remove(image_file)
 
-        return
-
     def bucket_diskspace(self, bucket_name):
         """
-        Determine the amount of disk space used by a bucket
+        Determine the amount of disk space used by a bucket.
+
+        Parameters
+        ----------
+        bucket_name : string
+            Name of the bucket.
+
+        Returns
+        -------
+        dictionary
+            Reported size of bucket and mounted storage.
+
+        See Also
+        --------
+        Resen.dir_size : Determine total size of directory in bytes.
+        DockerHelper.get_container_size
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -807,7 +1272,19 @@ class Resen:
 
     def dir_size(self, directory):
         """
-        Determine total size of directory in bytes, doesn't follow symlinks.
+        Determine total size of directory in bytes.
+
+        XXX This method doesn't follow symlinks.
+
+        Parameters
+        ----------
+        directory : pathlike
+            Directory whose size will be determined.
+
+        Returns
+        -------
+        int
+            Size of `directory` in bytes.
         """
         total_size = 0
         for dirpath, _, filenames in os.walk(directory):
@@ -819,8 +1296,23 @@ class Resen:
         return total_size
 
     def list_buckets(self, names_only=False, bucket_name=None):
-        """
-        Generate a nicely formated string listing all the buckets and their statuses
+        """Generate a nicely formated string listing all the buckets and their statuses.
+
+        Parameters
+        ----------
+        names_only : Bool, default=False
+            If True, print only the names of buckets.
+        bucket_name : string, default=None
+            If not None, prints the status of the bucket called `bucket_name`.
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        ResenCmd.do_list : List all resen buckets.
+        ResenCmd.do_status : Print the status of a bucket.
         """
         if bucket_name is None:
             if names_only:
@@ -860,8 +1352,19 @@ class Resen:
                 print("{:<15}{:<15}".format(port[0], port[1]))
 
     def update_bucket_statuses(self):
-        """
-        Update container status for all buckets
+        """Update container status for all buckets.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        DockerHelper.get_container_status : Get the status of a particular container.
         """
         for bucket in self.buckets:
             if bucket["container"] is None:
@@ -872,6 +1375,23 @@ class Resen:
             self.save_config()
 
     def update_core_list(self):
+        """Pull resen cores from github.
+
+        Pull Docker images used to create Resen buckets from GitHub at
+        https://raw.githubusercontent.com/EarthCubeInGeo/resen-core/master/cores.json.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        Resen. _get_valid_cores
+        """
         core_list_url = (
             "https://raw.githubusercontent.com/EarthCubeInGeo/"
             "resen-core/master/cores.json"
@@ -897,10 +1417,42 @@ class Resen:
         self.valid_cores = self.__get_valid_cores()
 
     def update_docker_settings(self):
+        """Update Resen settings related to Docker on Windows.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        Resen.__get_win_vbox_map
+        """
         # get docker inputs from resen cmd line
         self.valid_cores = self.__get_win_vbox_map(True)
 
     def __get_valid_cores(self):
+        """Get list of available Resen cores.
+
+        Get list of valid and available Resen cores (appropriate Docker images) for user
+        to choose and create buckets from.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
+            List of strings, which represent the Resen core version available.
+
+        See Also
+        --------
+        Resen.update_core_list : Pull resen cores from github.
+        """
         # define core list directory
         core_dir = os.path.join(self.resen_root_dir, "cores")
 
@@ -923,6 +1475,19 @@ class Resen:
         return cores
 
     def _get_config_dir(self):
+        """Get Resen config directory.
+
+        Resen config firectory depends on host machine and operating system.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        pathlike
+            Path to Resen config directory.
+        """
         appname = "resen"
 
         if "APPDATA" in os.environ:
@@ -944,13 +1509,27 @@ class Resen:
         return os.path.join(homedir, appname)
 
     def __process_exists(self, pid):
-        # Need to do different things for *nix vs. Windows
+        """Check whether a process is running.
+
+        Parameters
+        ----------
+        pid : int
+            PID which whose running status will be checked.
+
+        Returns
+        -------
+        Bool
+            True if process with PID `pid` is running. False otherwise.
+        """
+        # TODO Need to do different things for *nix vs. Windows
         # see https://stackoverflow.com/questions/568271/
         # how-to-check-if-there-exists-a-process-with-a-given-pid-in-python
 
         if os.name == "nt":
             # only works on windows
-            from win32com.client import GetObject
+            from win32com.client import (
+                GetObject,
+            )  # TODO: maybe we shouldn't do the import here? what's pep8 on conditional imports?
 
             WMI = GetObject("winmgmts:")
             processes = WMI.InstancesOf("Win32_Process")
@@ -984,6 +1563,19 @@ class Resen:
         self.__locked = True
 
     def __unlock(self):
+        """Remove lockfile.
+
+        This method is only called in conjunction wiht the destructor method, Resen.__del__,
+        and attempts to remove the member variable self.__lockfile.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         if not self.__locked:
             return
 
@@ -996,8 +1588,23 @@ class Resen:
             print(f"WARNING: Unable to remove lockfile: {str(exc)}")
 
     def __detect_selinux(self):
+        """Detect whether Security-Enhanced Linux, SELinux, is enabled.
+
+        This method is needed to determine permissions for bucket generation.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Bool
+            True if SELinux is found. False otherwise.
+        """
         try:
-            with Popen(["/usr/sbin/getenforce"], stdin=PIPE, stdout=PIPE, stderr=PIPE) as pop:
+            with Popen(
+                ["/usr/sbin/getenforce"], stdin=PIPE, stdout=PIPE, stderr=PIPE
+            ) as pop:
                 output, _ = pop.communicate()
                 output = output.decode("utf-8").strip("\n")
                 return_code = pop.returncode
@@ -1009,6 +1616,17 @@ class Resen:
             return False
 
     def __get_win_vbox_map(self, reset=False):
+        """Get Docker settings for Windows users.
+
+        Parameters
+        ----------
+        reset : Bool, default=False
+            When True, users will be re-queried for system settings.
+
+        Returns
+        -------
+        None
+        """
         # quick fix for determining windows with docker tool box
         if platform.system().startswith("Win"):
             vm_info = os.path.join(self.resen_root_dir, "docker_toolbox_path_info.json")
@@ -1066,15 +1684,30 @@ class Resen:
                     return None
 
     def __trim(self, string, length):
+        """Trim string to given length.
+
+        Parameters
+        ----------
+        string : string
+            String to be trimmed.
+        length : int
+            Length to trim string to.
+
+        Returns
+        -------
+        string
+            Trimmed string.
+        """
         if len(string) > length:
             return string[: length - 3] + "..."
         return string
 
     def __del__(self):
+        """Class destructor."""
         self.__unlock()
 
     # TODO: def reset_bucket(self,bucket_name):
-    # used to reset a bucket to initial state (stop existing container, 
+    # used to reset a bucket to initial state (stop existing container,
     # delete it, create new container)
 
 
