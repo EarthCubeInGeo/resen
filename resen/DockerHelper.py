@@ -24,10 +24,10 @@ class DockerHelper:
             self.docker = docker.from_env()
         except Exception as exc:
             print(
-                "Error creating the docker client. Be sure to allow the  "
-                "default Docker socket in Advanced Docker desktop Settings. "
+                f"ERROR: Problem starting Docker client: {exc}.\nPlease confirm that Docker "
+                "is running.\nIf issues persist, be sure to "
+                "allow the default Docker socket in Advanced Docker desktop Settings."
             )
-            print(exc)
             raise
 
     # def create_container(self,**input_kwargs):
