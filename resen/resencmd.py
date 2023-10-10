@@ -16,6 +16,7 @@ import cmd  # for command line interface
 import shlex
 import pathlib
 import os
+import docker
 import resen
 
 VERSION = resen.__version__
@@ -1056,6 +1057,9 @@ def main():
         res = resen.Resen()
     except RuntimeError:
         print("ERROR: another instance of Resen is already running!")
+        sys.exit(1)
+    except docker.errors.DockerException as exc:
+        # print(exc)
         sys.exit(1)
 
     ResenCmd(res).cmdloop(intro)
