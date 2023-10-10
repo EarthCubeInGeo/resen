@@ -12,6 +12,7 @@ import requests
 # how do we call docker commands? subprocess? os.call?
 # TODO: Use the docker SDK (https://docker-py.readthedocs.io/en/stable/)
 class DockerHelper:
+    """Class to wrapp up native Docker commands as methods to be use in resen."""
     def __init__(self):
         # TODO: define these in a dictionary or json file for each version of resen-core
         # need to get information for each resen-core from somewhere.
@@ -209,8 +210,8 @@ class DockerHelper:
             update_bar(id_total, sum(id_current), t_0, current_time)
         except Exception as exc:
             raise RuntimeError(
-                f"\nException encountered while pulling image {pull_image}\nException: {str(exc)}"
-            )
+                f"\nException encountered while pulling image {pull_image}\n"\
+                    f"Exception: {str(exc)}") from exc
 
         # avoid erasing the progress bar at the end
         print()
@@ -275,6 +276,20 @@ class DockerHelper:
         return image.id
 
     def get_container_size(self, bucket):
+        """Determine the size of the container (disk space)
+
+
+        Parameters
+        ----------
+        bucket : dictionary
+            The bucket dictionary with info about the bucket, e.g. the
+            container hash id.
+
+        Returns
+        -------
+        float :
+            The size of the container
+        """
         # determine the size of the container (disk space)
         # docker container inspect
         # (https://docs.docker.com/engine/reference/commandline/container_inspect/)
