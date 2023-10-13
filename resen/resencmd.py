@@ -55,7 +55,7 @@ class ResenCmd(cmd.Cmd):
         bucket_name = self.get_valid_name(">>> Enter bucket name: ")
 
         # First, ask user about the bucket they want to create
-        valid_versions = sorted([x["version"] for x in self.program.valid_cores])
+        valid_versions = sorted([x["version"] for x in self.program.get_valid_cores()])
         if len(valid_versions) == 0:
             print(
                 "WARNING: No valid versions of resen-core are available! Please run"
@@ -66,9 +66,10 @@ class ResenCmd(cmd.Cmd):
         docker_image = self.get_valid_version(">>> Select a version: ", valid_versions)
 
         # Mounting persistent storage
-        msg = "Local directories can be mounted to /home/jovyan/mount in a bucket.  "
-        msg += "You can specify either r or rw privileges for each directory mounted.  "
-        print(msg)
+        print(
+            "Local directories can be mounted to /home/jovyan/mount in a bucket. "
+            "You can specify either r or rw privileges for each directory mounted. "
+        )
         mounts = []
 
         # query for mounts to mount
@@ -495,8 +496,7 @@ class ResenCmd(cmd.Cmd):
             img_name = None
             img_tag = None
 
-        resen_home_dir = self.program.resen_home_dir
-        default_import = os.path.join(resen_home_dir, bucket_name)
+        default_import = os.path.join(self.program.get_home_dir(), bucket_name)
         print(
             "The default directory to extract the bucket metadata and mounts to is "
             f"{default_import}."
@@ -733,7 +733,7 @@ class ResenCmd(cmd.Cmd):
                 print("Bucket names must be less than 20 characters.")
             elif not name[0].isalpha():
                 print("Bucket names must start with an alphabetic character.")
-            elif name in self.program.bucket_names:
+            elif name in self.program.get_bucket_names():
                 print("Cannot use the same name as an existing bucket!")
             else:
                 return name
@@ -1018,6 +1018,19 @@ class ResenCmd(cmd.Cmd):
         )
 
     def help_quit(self):
+        """Print help statement for the 'quit' command.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        print("quit : Terminate the application.")
+
+    def complete_text(self):  # for tab completion for individual commands
         """Print help statement for the 'quit' command.
 
         Parameters

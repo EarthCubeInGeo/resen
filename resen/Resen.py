@@ -116,33 +116,32 @@ class Resen:
     def __init__(self):
         """Class constructor."""
         # get configuration info
-        self.resen_root_dir = self._get_config_dir()
-        self.resen_home_dir = self._get_home_dir()
+        self.__resen_root_dir = self.get_config_dir()
 
         # set lock
         self.__locked = False
         self.__lock()
 
         # initialize docker helper
-        self.dockerhelper = DockerHelper()
+        self.__dockerhelper = DockerHelper()
 
         # load configuration
-        self.load_config()
-        self.valid_cores = self.__get_valid_cores()
-        self.selinux = self.__detect_selinux()
+        self.__load_config()
+        self.__valid_cores = self.get_valid_cores()
+        self.__selinux = self.__detect_selinux()
 
-        self.win_vbox_map = self.__get_win_vbox_map()
+        self.__win_vbox_map = self.__get_win_vbox_map()
 
-        ### NOTE - Does this still need to include '/home/jovyan/work' for server compatability?
+        ### TODO - Does this still need to include '/home/jovyan/work' for server compatability?
         ### If so, can we move the white list to resencmd.py? The server shouldn't ever try to
         ### mount to an illegal location but the user might.
-        self.storage_whitelist = ["/home/jovyan/mount"]
+        self.__storage_whitelist = ["/home/jovyan/mount"]
 
-    def load_config(self):
+    def __load_config(self):
         """Load config file that contains information on existing buckets.
 
-        Load the resen config file which exists in self.resen_root_dir.
-        member variables, such as self.buckets, will be set.
+        Load the resen config file which exists in self.__resen_root_dir.
+        member variables, such as self.__buckets, will be set.
 
         Parameters
         ----------
@@ -154,12 +153,10 @@ class Resen:
 
         See Also
         --------
-        Resen._get_config_dir :
+        Resen.get_config_dir : Get Resen config directory.
         """
-        # TODO: provide description for Resen._get_config_dir above
-
         # define config file name
-        bucket_config = os.path.join(self.resen_root_dir, "buckets.json")
+        bucket_config = os.path.join(self.__resen_root_dir, "buckets.json")
 
         # TODO: handle exceptions due to file reading problems (incorrect file permissions)
         # TODO: update status of buckets to double check that status is the same as in bucket.json
@@ -171,10 +168,24 @@ class Resen:
             # if config file doesn't exist, initialize and empty list
             params = []
 
-        self.buckets = params
-        self.bucket_names = [x["name"] for x in self.buckets]
+        self.__buckets = (
+            params  # TODO: should be a private member variable / attribute!
+        )
+        self.__bucket_names = [x["name"] for x in self.__buckets]
 
     def save_config(self):
+        # TODO: make sure bucket json info isn't just dumped into file without confirming the format is correct!!!
+        # Format should be:
+        # params = {}
+        # params["name"] = bucket_name
+        # params["image"] = None
+        # params["container"] = None
+        # params["port"] = []
+        # params["storage"] = []
+        # params["status"] = None
+        # params["jupyter"] = {}
+        # params["jupyter"]["token"] = None
+        # params["jupyter"]["port"] = None
         """Save all bucket info to config file.
 
         Parameters
@@ -187,13 +198,13 @@ class Resen:
 
         See Also
         --------
-        Resen._get_config_dir :
+        Resen.get_config_dir : Get Resen config directory.
         """
-        # define config file name
-        bucket_config = os.path.join(self.resen_root_dir, "buckets.json")
+        # define config file name #TODO: should this be a member variable / attribute?
+        bucket_config = os.path.join(self.__resen_root_dir, "buckets.json")
         # TODO: handle exceptions due to file writing problems (no free disk space, incorrect file permissions)
         with open(bucket_config, "w") as f:
-            json.dump(self.buckets, f)
+            json.dump(self.__buckets, f)
 
     def get_bucket(self, bucket_name):
         """Retrieve a bucket object by its name.
@@ -215,11 +226,11 @@ class Resen:
         """
         # TODO: what's the type of the returned bucket?? in docstring above
         try:
-            ind = self.bucket_names.index(bucket_name)
+            ind = self.__bucket_names.index(bucket_name)
         except ValueError:
             raise ValueError(f"Bucket with name: {bucket_name} does not exist!")
 
-        bucket = self.buckets[ind]
+        bucket = self.__buckets[ind]
         return bucket
 
     def create_bucket(self, bucket_name):
@@ -244,7 +255,7 @@ class Resen:
         Resen.save_config : Save all bucket info to config file.
         """
         # raise error if bucket_name already in uses
-        if bucket_name in self.bucket_names:
+        if bucket_name in self.__bucket_names:
             raise ValueError(f"Bucket with name: {bucket_name} already exists!")
 
         params = {}
@@ -258,9 +269,9 @@ class Resen:
         params["jupyter"]["token"] = None
         params["jupyter"]["port"] = None
 
-        # now add the new bucket to the self.buckets config and then update the config file
-        self.buckets.append(params)
-        self.bucket_names = [x["name"] for x in self.buckets]
+        # now add the new bucket to the self.__buckets config and then update the config file
+        self.__buckets.append(params)
+        self.__bucket_names = [x["name"] for x in self.__buckets]
         self.save_config()
 
     def remove_bucket(self, bucket_name):
@@ -298,7 +309,7 @@ class Resen:
         # if so, we shouldn't try to remove the image!
         rm_image_id = bucket["image"]["image_id"]
         buckets_with_same_id = []
-        for bucket in self.buckets:
+        for bucket in self.__buckets:
             other_id = bucket["image"]["image_id"]
             other_name = bucket["name"]
             if other_id == rm_image_id and other_name != bucket_name:
@@ -313,20 +324,20 @@ class Resen:
         ):
             # if bucket imported, clean up by removing image and import directory
             if "import_dir" in bucket:
-                self.dockerhelper.remove_container(bucket, remove_image=remove_image)
+                self.__dockerhelper.remove_container(bucket, remove_image=remove_image)
                 # also remove temporary import directory
                 shutil.rmtree(bucket["import_dir"])
             else:
-                self.dockerhelper.remove_container(bucket)
+                self.__dockerhelper.remove_container(bucket)
 
             bucket["status"] = None
             bucket["container"] = None
             self.save_config()
 
         # identify bucket index and remove it from both buckets and bucket_names
-        ind = self.bucket_names.index(bucket_name)
-        self.buckets.pop(ind)
-        self.bucket_names.pop(ind)
+        ind = self.__bucket_names.index(bucket_name)
+        self.__buckets.pop(ind)
+        self.__bucket_names.pop(ind)
         self.save_config()
 
     def set_image(self, bucket_name, docker_image):
@@ -349,14 +360,13 @@ class Resen:
         RuntimeError
             If the bucket called `bucket_name` has already been started.
         ValueError
-            If `docker_image` is not in self.valid_cores.
+            If `docker_image` is not in self.__valid_cores.
 
         See Also
         --------
         ResenCmd.do_create : Create a new bucket by responding to the prompts provided.
-        Resen.__get_valid_cores :
+        Resen.get_valid_cores : Get list of available Resen cores.
         """
-        # TODO : add method description for __get_valid_cores in docstring above.
 
         # TODO It should be fine to overwrite an existing image if the container hasn't been started yet
         # TODO would be helpful to save image org and repo as well for export purposes
@@ -370,7 +380,7 @@ class Resen:
             raise RuntimeError("Bucket has already been started, cannot set new image.")
 
         # check that input is a valid image
-        valid_versions = [x["version"] for x in self.valid_cores]
+        valid_versions = [x["version"] for x in self.__valid_cores]
         if not docker_image in valid_versions:
             raise ValueError(
                 f"Invalid resen-core version {docker_image}. Valid versions: "
@@ -378,7 +388,7 @@ class Resen:
             )
 
         ind = valid_versions.index(docker_image)
-        image = self.valid_cores[ind]
+        image = self.__valid_cores[ind]
         bucket["image"] = image
 
         self.save_config()
@@ -438,9 +448,9 @@ class Resen:
             raise FileNotFoundError("Cannot find local storage location!")
 
         # if docker toolbox, change path to be the docker VM path instead of the host machine path
-        if self.win_vbox_map:
+        if self.__win_vbox_map:
             local = Path(
-                local.replace(self.win_vbox_map[0], self.win_vbox_map[1])
+                local.replace(self.__win_vbox_map[0], self.__win_vbox_map[1])
             ).as_posix()
 
         # check if input locations already exist in bucket list of storage
@@ -456,14 +466,14 @@ class Resen:
         # check that user is mounting in a whitelisted location
         valid = False
         child = Path(container)
-        for loc in self.storage_whitelist:
+        for loc in self.__storage_whitelist:
             path = Path(loc)
             if path == child or path in child.parents:
                 valid = True
         if not valid:
             raise ValueError(
                 "Invalid mount location. Can only mount storage into: "
-                f"{', '.join(self.storage_whitelist)}."
+                f"{', '.join(self.__storage_whitelist)}."
             )
 
         # check and adjust permissions
@@ -473,7 +483,7 @@ class Resen:
         if permissions in ["r", "ro"]:
             permissions = "ro"
 
-        if self.selinux:
+        if self.__selinux:
             permissions += ",Z"
 
         # Add storage location
@@ -516,9 +526,9 @@ class Resen:
             )
 
         # if docker toolbox, change path to be the docker VM path instead of the host machine path
-        if self.win_vbox_map:
+        if self.__win_vbox_map:
             local = Path(
-                local.replace(self.win_vbox_map[0], self.win_vbox_map[1])
+                local.replace(self.__win_vbox_map[0], self.__win_vbox_map[1])
             ).as_posix()
 
         # find index of storage
@@ -661,7 +671,7 @@ class Resen:
         # TODO: check if port location exists on host - maybe not?  If usuer manually assigns port, ok to trust they know what they're doing?
         # TODO: check if port avaiable on host (from https://stackoverflow.com/questions/2470971/fast-way-to-test-if-a-port-is-in-use-using-python)
         port = 9000
-        assigned_ports = [y[0] for x in self.buckets for y in x["port"]]
+        assigned_ports = [y[0] for x in self.__buckets for y in x["port"]]
 
         while True:
             if port in assigned_ports:
@@ -709,7 +719,7 @@ class Resen:
         if bucket["image"] is None:
             raise RuntimeError("Bucket does not have an image assigned to it.")
 
-        container_id, status = self.dockerhelper.create_container(bucket)
+        container_id, status = self.__dockerhelper.create_container(bucket)
         bucket["container"] = container_id
         bucket["status"] = status
         self.save_config()
@@ -757,7 +767,7 @@ class Resen:
             )
 
         # start the container and update status
-        status = self.dockerhelper.start_container(bucket)
+        status = self.__dockerhelper.start_container(bucket)
         bucket["status"] = status
         self.save_config()
 
@@ -796,7 +806,7 @@ class Resen:
             return
 
         # stop the container and update status
-        status = self.dockerhelper.stop_container(bucket)
+        status = self.__dockerhelper.stop_container(bucket)
         bucket["status"] = status
         self.save_config()
 
@@ -845,7 +855,7 @@ class Resen:
             raise RuntimeError(f"Bucket {bucket['name']} is not running!")
 
         # execute command
-        result = self.dockerhelper.execute_command(
+        result = self.__dockerhelper.execute_command(
             bucket, command, user=user, detach=detach, tty=tty
         )
         code, _ = result
@@ -1100,7 +1110,7 @@ class Resen:
             # export container to image *.tar file
             image_file_name = f"{bucket_name}_image.tgz"
             print("...exporting image...")
-            self.dockerhelper.export_container(
+            self.__dockerhelper.export_container(
                 bucket, bucket_dir_path.joinpath(image_file_name), img_repo, img_tag
             )
             print("...done")
@@ -1205,7 +1215,7 @@ class Resen:
 
         # load image
         image_file = str(extract_dir.joinpath(manifest["image"]))
-        img_id = self.dockerhelper.import_image(image_file, full_repo, img_tag)
+        img_id = self.__dockerhelper.import_image(image_file, full_repo, img_tag)
 
         # add image to bucket
         bucket["image"] = {
@@ -1257,7 +1267,7 @@ class Resen:
         bucket = self.get_bucket(bucket_name)
 
         report = {}
-        report["container"] = self.dockerhelper.get_container_size(bucket) / 1.0e6
+        report["container"] = self.__dockerhelper.get_container_size(bucket) / 1.0e6
         report["storage"] = []
 
         total_size = 0.0
@@ -1317,11 +1327,11 @@ class Resen:
         if bucket_name is None:
             if names_only:
                 print("{:<0}".format("Bucket Name"))
-                for name in self.bucket_names:
+                for name in self.__bucket_names:
                     print("{:<0}".format(str(name)))
             else:
                 print("{:<20}{:<25}{:<25}".format("Bucket Name", "Version", "Status"))
-                for bucket in self.buckets:
+                for bucket in self.__buckets:
                     name = self.__trim(str(bucket["name"]), 18)
                     image = self.__trim(str(bucket["image"]["version"]), 23)
                     status = self.__trim(str(bucket["status"]), 23)
@@ -1366,11 +1376,11 @@ class Resen:
         --------
         DockerHelper.get_container_status : Get the status of a particular container.
         """
-        for bucket in self.buckets:
+        for bucket in self.__buckets:
             if bucket["container"] is None:
                 continue
 
-            status = self.dockerhelper.get_container_status(bucket)
+            status = self.__dockerhelper.get_container_status(bucket)
             bucket["status"] = status
             self.save_config()
 
@@ -1390,13 +1400,13 @@ class Resen:
 
         See Also
         --------
-        Resen. _get_valid_cores
+        Resen.get_valid_cores : Get list of available Resen cores.
         """
         core_list_url = (
             "https://raw.githubusercontent.com/EarthCubeInGeo/"
             "resen-core/master/cores.json"
         )
-        core_filename = os.path.join(self.resen_root_dir, "cores", "cores.json")
+        core_filename = os.path.join(self.__resen_root_dir, "cores", "cores.json")
 
         try:
             req = requests.get(core_list_url)
@@ -1414,7 +1424,7 @@ class Resen:
         with open(core_filename, "wb") as f:
             f.write(req.content)
 
-        self.valid_cores = self.__get_valid_cores()
+        self.__valid_cores = self.get_valid_cores()
 
     def update_docker_settings(self):
         """Update Resen settings related to Docker on Windows.
@@ -1429,12 +1439,11 @@ class Resen:
 
         See Also
         --------
-        Resen.__get_win_vbox_map
         """
         # get docker inputs from resen cmd line
-        self.valid_cores = self.__get_win_vbox_map(True)
+        self.__get_win_vbox_map(True)
 
-    def __get_valid_cores(self):
+    def get_valid_cores(self):
         """Get list of available Resen cores.
 
         Get list of valid and available Resen cores (appropriate Docker images) for user
@@ -1442,7 +1451,8 @@ class Resen:
 
         Parameters
         ----------
-        None
+        pull_cores : Bool, default=False
+            If True, update_core_list() will be run to pull cores from GitHub.
 
         Returns
         -------
@@ -1451,10 +1461,10 @@ class Resen:
 
         See Also
         --------
-        Resen.update_core_list : Pull resen cores from github.
+        Resen.update_core_list : Pull resen cores from GitHub.
         """
         # define core list directory
-        core_dir = os.path.join(self.resen_root_dir, "cores")
+        core_dir = os.path.join(self.__resen_root_dir, "cores")
 
         # If core directory does not exist, create it and download the default core list file
         if not os.path.exists(core_dir):
@@ -1474,7 +1484,22 @@ class Resen:
 
         return cores
 
-    def _get_config_dir(self):
+    def get_bucket_names(self):
+        """Get Resen bucket names.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        list
+            List of bucket names
+        """
+
+        return self.__bucket_names
+
+    def get_config_dir(self):
         """Get Resen config directory.
 
         Resen config firectory depends on host machine and operating system.
@@ -1502,7 +1527,18 @@ class Resen:
 
         return configpath
 
-    def _get_home_dir(self):
+    def get_home_dir(self):
+        """Get home directory of app called "resen".
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Pathlike
+            Path to Resen home directory, a combination of home directory and "resen".
+        """
         appname = "resen"
         homedir = os.path.expanduser("~")
 
@@ -1545,12 +1581,12 @@ class Resen:
         return True  # no error, we can send a signal to the process
 
     def __lock(self):
-        # dev note: if we want to be more advanced, need psutil as dependency
+        # NOTE: dev note: if we want to be more advanced, need psutil as dependency
         # get some telemetry to fingerprint with
         cur_pid = os.getpid()  # process id
 
         # check if lockfile exists
-        self.__lockfile = os.path.join(self.resen_root_dir, "lock")
+        self.__lockfile = os.path.join(self.__resen_root_dir, "lock")
         if os.path.exists(self.__lockfile):
             # parse existing file
             with open(self.__lockfile, "r") as f:
@@ -1629,7 +1665,9 @@ class Resen:
         """
         # quick fix for determining windows with docker tool box
         if platform.system().startswith("Win"):
-            vm_info = os.path.join(self.resen_root_dir, "docker_toolbox_path_info.json")
+            vm_info = os.path.join(
+                self.__resen_root_dir, "docker_toolbox_path_info.json"
+            )
 
             # ask user about docker toolbox, save responses for future use
             if reset or (not os.path.exists(vm_info)):
