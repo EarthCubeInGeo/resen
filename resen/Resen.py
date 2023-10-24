@@ -110,8 +110,39 @@ def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
 
 
 class Resen:
-    # TODO: fix this class docstring?
-    """A class which takes care of Resen bucket management and host memory management."""
+    """This class manages Resen buckets and host memory.
+
+    Parameters
+    ----------
+    None
+
+    Attributes
+    ----------
+    __resen_root_dir : pathlike
+        The path to the Resen config directory. Contains bucket information and Resen cores.
+    __dockerhelper : DockerHelper
+        An instance of a custom class which takes care on the under-the-hood Docker operations.
+    __valid_cores : list
+        A list containing json information on available Resen cores.
+    __selinux : Bool
+        True if Security-Enhanced Linux is enabled.
+    __win_vbox_map : pathlike
+        Path to Docker VM if Docker Toolbox is in use (Windows). Else, is None.
+    __storage_whitelist : list
+        A list of acceptable paths on host to mount to. Hard-coded to "/home/jovyan/mount".
+    __buckets : list
+        A list of json information for each bucket.
+    __bucket_names : list
+        A list of bucket names, which are extracted from the `buckets` attribute.
+    __locked : Bool
+        A Bool which ensures only one instance of Resen is running at a time on host.
+
+    Examples
+    --------
+    >>> r = Resen()
+    >>> r.get_config_dir()
+    /home/username/.config/resen
+    """
 
     def __init__(self):
         """Class constructor."""
@@ -140,8 +171,9 @@ class Resen:
     def __load_config(self):
         """Load config file that contains information on existing buckets.
 
-        Load the resen config file which exists in self.__resen_root_dir.
-        member variables, such as self.__buckets, will be set.
+        This function loads the resen config file in self.__resen_root_dir and sets attributes,
+        such as self.__buckets. This function is called only once within the class: in the
+        class constructor.
 
         Parameters
         ----------
@@ -168,9 +200,7 @@ class Resen:
             # if config file doesn't exist, initialize and empty list
             params = []
 
-        self.__buckets = (
-            params  # TODO: should be a private member variable / attribute!
-        )
+        self.__buckets = params
         self.__bucket_names = [x["name"] for x in self.__buckets]
 
     def save_config(self):
@@ -216,15 +246,39 @@ class Resen:
 
         Returns
         -------
-        type
-            Retrieved bucket
+        dictionary
+            Retrieved bucket.
 
         Raises
         ------
         ValueError
             If `bucket_name` doesn't exist.
+
+        See Also
+        --------
+        Resen.get_bucket_names : Get Resen bucket names.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket("b2")
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 285, in get_bucket
+            raise ValueError(f"Bucket with name: {bucket_name} does not exist!")
+        ValueError: Bucket with name: b2 does not exist!
+        >>> r.get_bucket_names()
+        ['b1']
+        >>> r.get_bucket("b1")
+        {'name': 'b1', 'image': {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'},
+        'container': '851bd05f6749a590f1a86f833fc0908dedd8b680a117b9396daa0e01f7574069',
+        'port': [[9000, 9000, True]], 'storage': [], 'status': 'exited',
+        'jupyter': {'token': None, 'port': None}}
         """
-        # TODO: what's the type of the returned bucket?? in docstring above
         try:
             ind = self.__bucket_names.index(bucket_name)
         except ValueError:
@@ -253,6 +307,22 @@ class Resen:
         See Also
         --------
         Resen.save_config : Save all bucket info to config file.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket("b2")
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 285, in get_bucket
+            raise ValueError(f"Bucket with name: {bucket_name} does not exist!")
+        ValueError: Bucket with name: b2 does not exist!
+        >>> r.create_bucket("b2")
+        >>> r.get_bucket_names()
+        ['b1', 'b2']
+        >>> r.get_bucket("b2")
+        {'name': 'b2', 'image': None, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
         """
         # raise error if bucket_name already in uses
         if bucket_name in self.__bucket_names:
@@ -366,6 +436,30 @@ class Resen:
         --------
         ResenCmd.do_create : Create a new bucket by responding to the prompts provided.
         Resen.get_valid_cores : Get list of available Resen cores.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> cores = r.get_valid_cores()
+        >>> version0 = cores[0]["version"]
+        >>> print(cores[0]["version"])
+        2019.1.0rc1
+        >>> r.get_bucket_names()
+        ['b1', 'b2']
+        >>> r.create_bucket("b3")
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': None, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
+        >>> r.set_image("b3", version0)
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
         """
 
         # TODO It should be fine to overwrite an existing image if the container hasn't been started yet
@@ -403,7 +497,7 @@ class Resen:
         local : pathlike
             Path to local mount location.
         container : pathlike
-            Path to bucket.
+            Mount location within bucket.
         permissions : {"r", "ro", "rw"}, default="r"
             File permissions for mounted storage.
 
@@ -414,7 +508,7 @@ class Resen:
         Raises
         ------
         RuntimeError
-            If bucket/container has already been created, storage cannot be added.
+            If bucket has already been started, storage cannot be added.
         FileNotFoundError
             If `local` does not exist.
         FileExistsError
@@ -428,6 +522,34 @@ class Resen:
         --------
         ResenCmd.do_create : Create a new bucket by responding to the prompts provided.
         Resen.remove_storage : Remove a storage location for a bucket.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
+        >>> r.add_storage("b3", "/home/username/test_dir", "home/username/test_dir")
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 582, in add_storage
+            raise ValueError(
+        ValueError: Invalid mount location. Can only mount storage into: /home/jovyan/mount.
+        >>> r.add_storage("b3", "/home/username/test_dir", "/home/jovyan/mount")
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [],
+        'storage': [['/home/username/test_dir', '/home/jovyan/mount', 'ro']],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
         """
         # TODO: in  'Raises' section above, what does "whitelisted location" mean?
 
@@ -514,6 +636,28 @@ class Resen:
         See Also
         --------
         Resen.add_storage : Add a host machine storage location to the bucket.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [],
+        'storage': [['/home/username/test_dir', '/home/jovyan/mount', 'ro']],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
+        >>> r.remove_storage("b3", "/home/username/test_dir")
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
         """
 
         # get bucket
@@ -566,7 +710,7 @@ class Resen:
         Raises
         ------
         RuntimeError
-            If bucket/container has already been started, port cannot be added.
+            If bucket has already been started, port cannot be added.
         ValueError
             If port already exists in list of ports.
 
@@ -576,8 +720,28 @@ class Resen:
         Resen.remove_port : Remove a port from a bucket.
         DockerHelper.create_container : Create a docker container with the image, mounts, and
             ports set in this bucket. If the image does not exist locally, pull it.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
+        >>> r.add_port("b3")
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [[9001, 9001, True]],
+        'storage': [], 'status': None, 'jupyter': {'token': None, 'port': None}}
         """
-        # TODO: fix docstring above...
         # get bucket
         bucket = self.get_bucket(bucket_name)
 
@@ -628,6 +792,26 @@ class Resen:
         See Also
         --------
         Resen.add_port : Add a port to a bucket.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [[9001, 9001, True]],
+        'storage': [], 'status': None, 'jupyter': {'token': None, 'port': None}}
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -661,7 +845,8 @@ class Resen:
         Returns
         -------
         int
-            Available port which has been opened/bound. Defaults to 9000 when no ports have been assigned.
+            Available port which has been opened/bound.
+            Defaults to 9000 when no ports have been assigned.
 
         See Also
         --------
@@ -704,13 +889,39 @@ class Resen:
         Raises
         ------
         RuntimeError
-            If `bucket_name` does not have an image assigned to it.
+            If `bucket_name` does not have a (Docker) image assigned to it. See Resen.set_image.
 
         See Also
         --------
+        Resen.set_image : Set the Docker image to use for a bucket.
         DockerHelper.create_container : Create a docker container with the image, mounts, and
             ports set in this bucket. If the image does not exist locally, pull it.
-        Resen.set_sudo : Add jovyan user to sudoers.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, 'container': None, 'port': [], 'storage': [],
+        'status': None, 'jupyter': {'token': None, 'port': None}}
+        >>> r.create_container("b3", False)
+        Pulling image: resen-core:2019.1.0rc1
+        This may take some time...
+        [===============================>]100.0 %, 3.281/3.28GB Elapsed t: 0:01:42
+        Done!
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'},
+        'container': '82e4b02571bcca061c9822f1610b75e0238e1c81f006b2ff6dcf0f5d0a595577',
+        'port': [], 'storage': [], 'status': 'created', 'jupyter': {'token': None, 'port': None}}
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -751,7 +962,31 @@ class Resen:
 
         See Also
         --------
+        Resen.create_container : Create a Docker container for a bucket.
         DockerHelper.start_container : Start a container.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'},
+        'container': '82e4b02571bcca061c9822f1610b75e0238e1c81f006b2ff6dcf0f5d0a595577',
+        'port': [], 'storage': [], 'status': 'created', 'jupyter': {'token': None, 'port': None}}
+        >>> r.start_bucket("b3")
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'},
+        'container': '82e4b02571bcca061c9822f1610b75e0238e1c81f006b2ff6dcf0f5d0a595577',
+        'port': [], 'storage': [], 'status': 'running', 'jupyter': {'token': None, 'port': None}}
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -795,6 +1030,29 @@ class Resen:
         See Also
         --------
         DockerHelper.stop_container : Stop a container.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'},
+        'container': '82e4b02571bcca061c9822f1610b75e0238e1c81f006b2ff6dcf0f5d0a595577',
+        'port': [], 'storage': [], 'status': 'running', 'jupyter': {'token': None, 'port': None}}
+        >>> r.stop_bucket("b3")
+        >>> r.get_bucket("b3")
+        {'name': 'b3', 'image': {'version': '2019.1.0rc1', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'},
+        'container': '82e4b02571bcca061c9822f1610b75e0238e1c81f006b2ff6dcf0f5d0a595577',
+        'port': [], 'storage': [], 'status': 'exited', 'jupyter': {'token': None, 'port': None}}
         """
 
         self.update_bucket_statuses()
@@ -839,12 +1097,36 @@ class Resen:
         Raises
         ------
         RuntimeError
+            If the bucket is not running.
             If command fails to execute, i.e., if (detach is True and the exit code is not None) or
             (detach is False and the exit code is not 0).
 
         See Also
         --------
         DockerHelper.execute_command : Execute a command in a container.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.execute_command("b3", "echo hello", detach=False)
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 963, in execute_command
+            raise RuntimeError(f"Bucket {bucket['name']} is not running!")
+        RuntimeError: Bucket b3 is not running!
+        >>> r.start_bucket("b3")
+        >>> r.execute_command("b3", "echo hello", detach=False)
+        (0, b'hello\n')
+        >>> r.execute_command("b3", "ld", detach=False)
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 971, in execute_command
+            raise RuntimeError(f"Failed to execute command {command}")
+        RuntimeError: Failed to execute command ld
+        >>> r.execute_command("b3", "ls", detach=False)
+        (0, b'')
         """
         self.update_bucket_statuses()
         # get bucket
@@ -881,6 +1163,22 @@ class Resen:
         See Also
         --------
         Resen.execute_command : Execute a command in the bucket.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3']
+        >>> r.set_sudo("b3")
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 1186, in set_sudo
+            self.execute_command(bucket_name, command, user="root", detach=False, tty=True)
+        File "resen/Resen.py", line 1137, in execute_command
+            raise RuntimeError(f"Bucket {bucket['name']} is not running!")
+        RuntimeError: Bucket b3 is not running!
+        >>> r.start_bucket("b3")
+        >>> r.set_sudo("b3")
         """
         command = f"""bash -cl 'echo "jovyan:{password}" | chpasswd && usermod -aG sudo jovyan && sed --in-place "s/^#\s*\(%sudo\s\+ALL=(ALL:ALL)\s\+ALL\)/\\1/" /etc/sudoers'"""  # TODO: test this
         self.execute_command(bucket_name, command, user="root", detach=False, tty=True)
@@ -896,17 +1194,28 @@ class Resen:
         bucket_name : string
             Name of the bucket.
         local_port : int, default=None
-            Port from where jupyter server can be accessed. Must be a matched pair with `container_port`.
+            Port from where jupyter server can be accessed.
+            Must be a matched pair with `container_port`.
         container_port :
-            Port from where jupyter server can be accessed. Must be a matched pair with `local_port`.
+            Port from where jupyter server can be accessed.
+            Must be a matched pair with `local_port`.
 
         Returns
         -------
         None
 
+        Raises
+        ------
+        RuntimeError
+            If jupyter server failed to start.
+            If `local_port` or `container_port` not provided and no port has not been assigned to `bucket_name`.
+            See Resen.add_port to add a port, or provide them as parameters to this function.
+
         See Also
         --------
+        Resen.execute_command : Execute a command in the bucket.
         Resen.get_jupyter_pid : Get PID for the jupyter server running in a particular bucket.
+        Resen.add_port : Add a port to a bucket.
         """
         # TODO:
         # Identify port ONLY with local port?
@@ -928,9 +1237,15 @@ class Resen:
             return
 
         # if ports are not specified, use the first port set from the bucket
-        if not local_port and not container_port:
-            local_port = bucket["port"][0][0]
-            container_port = bucket["port"][0][1]
+        if not local_port or not container_port:
+            if len(bucket["port"]) != 0:
+                local_port = bucket["port"][0][0]
+                container_port = bucket["port"][0][1]
+
+            raise RuntimeError(
+                f"Local port or container has not been assigned. "
+                "Please provide a local port or have one assigned to bucket {bucket_name}"
+            )
 
         # Get the python environment path, if none found, default to py36
         envpath = bucket["image"].get("envpath", "/home/jovyan/envs/py36")
