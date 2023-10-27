@@ -281,8 +281,10 @@ class Resen:
         """
         try:
             ind = self.__bucket_names.index(bucket_name)
-        except ValueError:
-            raise ValueError(f"Bucket with name: {bucket_name} does not exist!")
+        except ValueError as exc:
+            raise ValueError(
+                f"Bucket with name: {bucket_name} does not exist!"
+            ) from exc
 
         bucket = self.__buckets[ind]
         return bucket
@@ -1244,18 +1246,17 @@ class Resen:
                 container_port = bucket["port"][0][1]
 
             raise RuntimeError(
-                f"Local port or container has not been assigned. "
-                "Please provide a local port or have one assigned to bucket {bucket_name}"
+                "Local port or container has not been assigned. "
+                f"Please provide a local port or have one assigned to bucket {bucket_name}"
             )
 
         # Get the python environment path, if none found, default to py36
         envpath = bucket["image"].get("envpath", "/home/jovyan/envs/py36")
 
         # set a random token and form
-        token = "%048x" % random.randrange(16**48)
         command = (
             f"bash -cl 'source {envpath}/bin/activate && jupyter lab --no-browser --ip 0.0.0.0 "
-            f"--port {container_port} --NotebookApp.token={token} "
+            f"--port {container_port} --NotebookApp.token={random.randrange(16**48):048x} "
             "--KernelSpecManager.ensure_native_kernel=False'"
         )
 
@@ -1679,11 +1680,11 @@ class Resen:
 
         if bucket_name is None:
             if names_only:
-                print("{:<0}".format("Bucket Name"))
+                print(f"{'Bucket Name':<0}")
                 for name in self.__bucket_names:
-                    print("{:<0}".format(str(name)))
+                    print(f"{str(name):<0}")
             else:
-                print("{:<20}{:<25}{:<25}".format("Bucket Name", "Version", "Status"))
+                print(f"{'Bucket Name':<20}{'Version':<25}{'Status':<25}")
                 for bucket in self.__buckets:
                     name = self.__trim(str(bucket["name"]), 18)
                     try:
@@ -1691,12 +1692,12 @@ class Resen:
                     except TypeError as err:
                         image = "None"
                     status = self.__trim(str(bucket["status"]), 23)
-                    print("{:<20}{:<25}{:<25}".format(name, image, status))
+                    print(f"{name:<20}{image:<25}{status:<25}")
 
         else:
             bucket = self.get_bucket(bucket_name)
 
-            print("%s\n%s\n" % (bucket["name"], "=" * len(bucket["name"])))
+            print(f"{bucket['name']}\n{'='*len(bucket['name'])}\n")
             try:
                 print("Resen-core Version: ", bucket["image"]["version"])
             except TypeError as err:
@@ -1711,14 +1712,14 @@ class Resen:
                 )
 
             print("\nStorage:")
-            print("{:<40}{:<40}{:<40}".format("Local", "Bucket", "Permissions"))
+            print(f"{'Local':<40}{'Bucket':<40}{'Permissions':<40}")
             for mount in bucket["storage"]:
-                print("{:<40}{:<40}{:<40}".format(mount[0], mount[1], mount[2]))
+                print(f"{mount[0]:<40}{mount[1]:<40}{mount[2]:<40}")
 
             print("\nPorts:")
-            print("{:<15}{:<15}".format("Local", "Bucket"))
+            print(f"{'Local':<15}{'Bucket':<15}")
             for port in bucket["port"]:
-                print("{:<15}{:<15}".format(port[0], port[1]))
+                print(f"{port[0]:<15}{port[1]:<15}")
 
     def update_bucket_statuses(self):
         """Update container status for all buckets.
@@ -1768,7 +1769,7 @@ class Resen:
         core_filename = os.path.join(self.__resen_root_dir, "cores", "cores.json")
 
         try:
-            req = requests.get(core_list_url)
+            req = requests.get(core_list_url, timeout=10)
         except (
             requests.exceptions.SSLError
         ) as exc:  # TODO: give user hints on how to fix this error
@@ -1838,8 +1839,8 @@ class Resen:
             try:
                 with open(filename) as f:
                     cores.extend(json.load(f))
-            except:
-                print(f"WARNING: Problem reading {filename}. Skipping.")
+            except Exception as exc:
+                print(f"WARNING: Problem reading {filename}: {exc}\nSkipping.")
 
         return cores
 
