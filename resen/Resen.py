@@ -1208,7 +1208,8 @@ class Resen:
         ------
         RuntimeError
             If jupyter server failed to start.
-            If `local_port` or `container_port` not provided and no port has not been assigned to `bucket_name`.
+            If `local_port` or `container_port` not provided and
+            no port has not been assigned to `bucket_name`.
             See Resen.add_port to add a port, or provide them as parameters to this function.
 
         See Also
@@ -1634,11 +1635,48 @@ class Resen:
         -------
         None
 
+        Raises
+        ------
+        AssertionError
+            If `names_only` is not a Boolean.
+
         See Also
         --------
         ResenCmd.do_list : List all resen buckets.
         ResenCmd.do_status : Print the status of a bucket.
+
+        Examples
+        --------
+        >>> r=Resen()
+        >>> r.list_buckets()
+        Bucket Name         Version                  Status
+        b1                  2021.1.0                 exited
+        b2                  None                     None
+        b3                  2019.1.0rc1              exited
+        >>> r.list_buckets("b1")
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 1658, in list_buckets
+            assert isinstance(names_only, bool), "names_only must be a boolean."
+        AssertionError: names_only must be a boolean.
+        >>> r.list_buckets(bucket_name="b1")
+        b1
+        ==
+
+        Resen-core Version:  2021.1.0
+        Status:  exited
+        Jupyter Token:  None
+        Jupyter Port:  None
+
+        Storage:
+        Local                                   Bucket                                  Permissions
+
+        Ports:
+        Local          Bucket
+        9000           9000
         """
+        assert isinstance(names_only, bool), "names_only must be a boolean."
+
         if bucket_name is None:
             if names_only:
                 print("{:<0}".format("Bucket Name"))
@@ -1648,7 +1686,10 @@ class Resen:
                 print("{:<20}{:<25}{:<25}".format("Bucket Name", "Version", "Status"))
                 for bucket in self.__buckets:
                     name = self.__trim(str(bucket["name"]), 18)
-                    image = self.__trim(str(bucket["image"]["version"]), 23)
+                    try:
+                        image = self.__trim(str(bucket["image"]["version"]), 23)
+                    except TypeError as err:
+                        image = "None"
                     status = self.__trim(str(bucket["status"]), 23)
                     print("{:<20}{:<25}{:<25}".format(name, image, status))
 
@@ -1656,7 +1697,10 @@ class Resen:
             bucket = self.get_bucket(bucket_name)
 
             print("%s\n%s\n" % (bucket["name"], "=" * len(bucket["name"])))
-            print("Resen-core Version: ", bucket["image"]["version"])
+            try:
+                print("Resen-core Version: ", bucket["image"]["version"])
+            except TypeError as err:
+                print("Resen-core Version: None")
             print("Status: ", bucket["status"])
             print("Jupyter Token: ", bucket["jupyter"]["token"])
             print("Jupyter Port: ", bucket["jupyter"]["port"])
