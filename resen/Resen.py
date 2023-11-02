@@ -748,7 +748,8 @@ class Resen:
         bucket = self.get_bucket(bucket_name)
 
         # if container has been created, cannot add port
-        if bucket["status"] is not None:
+        if bucket["status"] is not None and bucket["status"] != "exited":
+            print(bucket["status"])
             raise RuntimeError(
                 f"Bucket has already been started, cannot add port: {local}"
             )
@@ -853,6 +854,27 @@ class Resen:
         See Also
         --------
         Resen.add_port : Add a port to a bucket.
+
+        Examples
+        --------
+        >>> r=Resen()
+        >>> port = r.get_port()
+        9001 [Errno 98] Address already in use
+        9002 [Errno 98] Address already in use
+        9003 [Errno 98] Address already in use
+        9004 [Errno 98] Address already in use
+        9005 [Errno 98] Address already in use
+        9006 [Errno 98] Address already in use
+        9007 [Errno 98] Address already in use
+        9008 [Errno 98] Address already in use
+        9009 [Errno 98] Address already in use
+        9010 [Errno 98] Address already in use
+        9011 [Errno 98] Address already in use
+        9012 [Errno 98] Address already in use
+        9013 [Errno 98] Address already in use
+        9014 [Errno 98] Address already in use
+        >>> print(port)
+        9015
         """
         # XXX: this is not atomic, so it is possible that another process might snatch up the port
         # TODO: check if port location exists on host - maybe not?  If usuer manually assigns port, ok to trust they know what they're doing?
@@ -1244,19 +1266,20 @@ class Resen:
             if len(bucket["port"]) != 0:
                 local_port = bucket["port"][0][0]
                 container_port = bucket["port"][0][1]
-
-            raise RuntimeError(
-                "Local port or container has not been assigned. "
-                f"Please provide a local port or have one assigned to bucket {bucket_name}"
-            )
+            else:
+                raise RuntimeError(
+                    "Local port or container has not been assigned. "
+                    f"Please provide a local port or have one assigned to bucket {bucket_name}"
+                )
 
         # Get the python environment path, if none found, default to py36
         envpath = bucket["image"].get("envpath", "/home/jovyan/envs/py36")
 
         # set a random token and form
+        token = f"{random.randrange(16**48):048x}"
         command = (
             f"bash -cl 'source {envpath}/bin/activate && jupyter lab --no-browser --ip 0.0.0.0 "
-            f"--port {container_port} --NotebookApp.token={random.randrange(16**48):048x} "
+            f"--port {container_port} --NotebookApp.token={token} "
             "--KernelSpecManager.ensure_native_kernel=False'"
         )
 
