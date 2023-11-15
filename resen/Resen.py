@@ -1241,6 +1241,48 @@ class Resen:
         Resen.execute_command : Execute a command in the bucket.
         Resen.get_jupyter_pid : Get PID for the jupyter server running in a particular bucket.
         Resen.add_port : Add a port to a bucket.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3', 'b4']
+        >>> r.start_jupyter()
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        TypeError: start_jupyter() missing 1 required positional argument: 'bucket_name'
+        >>> r.start_jupyter("b4")
+        Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "resen/Resen.py", line 1254, in start_jupyter
+            pid = self.get_jupyter_pid(bucket_name)
+        File "resen/Resen.py", line 1385, in get_jupyter_pid
+            _, output = self.execute_command(bucket_name, "ps -ef", detach=False)
+        File "resen/Resen.py", line 1161, in execute_command
+            raise RuntimeError(f"Bucket {bucket['name']} is not running!")
+        RuntimeError: Bucket b4 is not running!
+        >>> r.start_bucket("b4")
+        >>> r.get_bucket("b4")
+        {'name': 'b4', 'image': {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'},
+        'container': 'dfaeabb458b37f45e9488f75a3516823d6f1e532fe08f5f45c080cef7583b181',
+        'port': [[9021, 9021, True]], 'storage': [], 'status': 'running',
+        'jupyter': {'token': None, 'port': None}}
+        >>> r.start_jupyter("b4")
+        Jupyter lab can be accessed in a browser at:
+        http://localhost:9021/?token=fc000ef605a4db0f6f167feb4499f02c88646023aa1b0792
+        >>> r.get_bucket("b4")
+        {'name': 'b4', 'image': {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'},
+        'container': 'dfaeabb458b37f45e9488f75a3516823d6f1e532fe08f5f45c080cef7583b181',
+        'port': [[9021, 9021, True]], 'storage': [], 'status': 'running',
+        'jupyter': {'token': 'fc000ef605a4db0f6f167feb4499f02c88646023aa1b0792', 'port': 9021}}
         """
         # TODO:
         # Identify port ONLY with local port?
@@ -1325,6 +1367,31 @@ class Resen:
         See Also
         --------
         Resen.get_jupyter_pid : Get PID for the jupyter server running in a particular bucket.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3', 'b4']
+        >>> r.get_bucket("b4")
+        {'name': 'b4', 'image': {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'},
+        'container': 'dfaeabb458b37f45e9488f75a3516823d6f1e532fe08f5f45c080cef7583b181',
+        'port': [[9021, 9021, True]], 'storage': [], 'status': 'running',
+        'jupyter': {'token': 'fc000ef605a4db0f6f167feb4499f02c88646023aa1b0792', 'port': 9021}}
+        >>> r.stop_jupyter("b4")
+        >>> r.get_bucket("b4")
+        {'name': 'b4', 'image': {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'},
+        'container': 'dfaeabb458b37f45e9488f75a3516823d6f1e532fe08f5f45c080cef7583b181',
+        'port': [[9021, 9021, True]], 'storage': [], 'status': 'running',
+        'jupyter': {'token': None, 'port': None}}
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
