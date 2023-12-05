@@ -142,6 +142,13 @@ class Resen:
     >>> r = Resen()
     >>> r.get_config_dir()
     /home/username/.config/resen
+
+    >>> r = Resen()
+    ERROR: Problem starting Docker client: Error while fetching server
+    API version: (2, 'CreateFile', 'The system cannot find the file specified.').
+    Please confirm that Docker is running.
+    If issues persist, be sure to allow the default Docker socket in
+    Advanced Docker desktop Settings.
     """
 
     def __init__(self):
@@ -229,6 +236,11 @@ class Resen:
         See Also
         --------
         Resen.get_config_dir : Get Resen config directory.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.save_config()
         """
         # define config file name #TODO: should this be a member variable / attribute?
         bucket_config = os.path.join(self.__resen_root_dir, "buckets.json")
@@ -1448,6 +1460,11 @@ class Resen:
         Returns
         -------
         None
+
+        Raises
+        ------
+        RuntimeError
+            If `bucket_name` is not running.
         """
         _, output = self.execute_command(bucket_name, "ps -ef", detach=False)
         output = output.decode("utf-8").split("\n")
@@ -1669,6 +1686,21 @@ class Resen:
         --------
         Resen.dir_size : Determine total size of directory in bytes.
         DockerHelper.get_container_size
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket("b1")
+        {'name': 'b1', 'image': {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'},
+        'container': '851bd05f6749a590f1a86f833fc0908dedd8b680a117b9396daa0e01f7574069',
+        'port': [[9000, 9000, True]], 'storage': [], 'status': 'exited',
+        'jupyter': {'token': None, 'port': None}}
+        >>> r.bucket_diskspace("b1")
+        {'container': 3227.272942, 'storage': [], 'total_storage': 0.0}
         """
         # get bucket
         bucket = self.get_bucket(bucket_name)
@@ -1702,6 +1734,12 @@ class Resen:
         -------
         int
             Size of `directory` in bytes.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.dir_size("docs")
+        1438936
         """
         total_size = 0
         for dirpath, _, filenames in os.walk(directory):
@@ -1825,6 +1863,11 @@ class Resen:
         See Also
         --------
         DockerHelper.get_container_status : Get the status of a particular container.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.update_bucket_statuses()
         """
         for bucket in self.__buckets:
             if bucket["container"] is None:
@@ -1851,6 +1894,11 @@ class Resen:
         See Also
         --------
         Resen.get_valid_cores : Get list of available Resen cores.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.update_core_list()
         """
         core_list_url = (
             "https://raw.githubusercontent.com/EarthCubeInGeo/"
@@ -1887,8 +1935,17 @@ class Resen:
         -------
         None
 
-        See Also
+        Examples
         --------
+        >>> r = Resen()
+        >>> r.update_docker_settings()
+        If your are unsure of the appropriate responses below, please refer to
+        the Resen documentation
+        (https://resen.readthedocs.io/en/latest/installation/installation.windows.html#docker)
+        for more details and assistance.
+        Resen appears to be running on a Windows system. Are you using Docker Toolbox? (y/n): n
+        WARNING: Resen will remember that you're NOT using Docker Toolbox.
+        To change these settings later, run the 'change_settings' command.
         """
         # get docker inputs from resen cmd line
         self.__get_win_vbox_map(True)
@@ -1912,6 +1969,35 @@ class Resen:
         See Also
         --------
         Resen.update_core_list : Pull resen cores from GitHub.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_valid_cores()
+        [{'version': '2019.1.0rc1', 'repo': 'resen-core', 'org': 'earthcubeingeo',
+        'image_id': 'sha256:ac8e2819e502a307be786e07ea4deda987a05cdccba1d8a90a415ea103c101ff',
+        'repodigest': 'sha256:1da843059202f13443cd89e035acd5ced4f9c21fe80d778ce2185984c54be00b',
+        'envpath': '/home/jovyan/envs/py36'}, {'version': '2019.1.0rc2', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:8b4750aa5186bdcf69a50fa10b0fd24a7c2293ef6135a9fdc594e0362443c99c',
+        'repodigest': 'sha256:2fe3436297c23a0d5393c8dae8661c40fc73140e602bd196af3be87a5e215bc2',
+        'envpath': '/home/jovyan/envs/py36'}, {'version': '2019.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:5300c6652851f35d2fabf866491143f471a7e121998fba27a8dff6b3c064af35',
+        'repodigest': 'sha256:a8ff4a65aa6fee6b63f52290c661501f6de5bf4c1f05202ac8823583eaad4296',
+        'envpath': '/home/jovyan/envs/py36'}, {'version': '2020.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:b1f1c9013924c95f678a0aa7403e343cc2ee103f438b1a237193f091170ba077',
+        'repodigest': 'sha256:7bf4e28cf06e40b0e12cb0474232d6d3b520ec1a8c2d361d83fc0cb97083989c',
+        'envpath': '/home/jovyan/envs/py36'}, {'version': '2020.2.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:232b82fb464d6c2d077fe6820e92e28645f317d59bcc8c0c89609c2452ca1180',
+        'repodigest': 'sha256:b793f427f49aba05e38cb72b74789f2f5fd030b0be8a7639e48d24803b5da0a8',
+        'envpath': '/home/jovyan/envs/py38'}, {'version': '2021.1.0', 'repo': 'resen-core',
+        'org': 'earthcubeingeo',
+        'image_id': 'sha256:824018435d5d42217e4b342b16c7a0f0eb649b3f4148e7f8c11d7c39e34cae3d',
+        'repodigest': 'sha256:c449da829228f6f25e24500a67c0f1cd1f6992be3c0d1b5772e837f2023ec506',
+        'envpath': '/home/jovyan/envs/py38'}]
         """
         # define core list directory
         core_dir = os.path.join(self.__resen_root_dir, "cores")
@@ -1945,6 +2031,12 @@ class Resen:
         -------
         list
             List of bucket names
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_bucket_names()
+        ['b1', 'b2', 'b3', 'b4']
         """
 
         return self.__bucket_names
@@ -1962,6 +2054,16 @@ class Resen:
         -------
         pathlike
             Path to Resen config directory.
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_config_dir()
+        '/home/user/.config/resen'
+
+        >>> r = Resen()
+        >>> r.get_config_dir()
+        'C:\\Users\\user\\AppData\\Roaming\\resen'
         """
         appname = "resen"
 
@@ -1988,6 +2090,16 @@ class Resen:
         -------
         Pathlike
             Path to Resen home directory, a combination of home directory and "resen".
+
+        Examples
+        --------
+        >>> r = Resen()
+        >>> r.get_home_dir()
+        '/home/user/resen'
+
+        >>> r = Resen()
+        >>> r.get_home_dir()
+        'C:\\Users\\user\\resen'
         """
         appname = "resen"
         homedir = os.path.expanduser("~")
